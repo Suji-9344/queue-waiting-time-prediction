@@ -7,38 +7,36 @@ import pandas as pd
 # -----------------------------
 st.set_page_config(page_title="Queue Waiting Time Predictor", layout="centered")
 st.title("🚦 Queue Waiting Time Predictor")
-st.write("Predict queue waiting time using real-life simulation formula.")
+st.write("Predict queue waiting time using real-life simulation formula.\nFill all inputs below and click Predict.")
 
 # -----------------------------
-# USER INPUT
+# USER INPUTS ON MAIN PAGE
 # -----------------------------
-st.sidebar.header("Input Parameters")
+people_ahead = st.number_input("People Ahead", min_value=0, max_value=50, value=10, step=1)
+avg_service_time = st.number_input("Average Service Time (minutes)", min_value=2, max_value=10, value=5, step=1)
+staff_count = st.number_input("Number of Staff", min_value=1, max_value=6, value=2, step=1)
 
-people_ahead = st.sidebar.slider("People Ahead", 0, 50, 10)
-avg_service_time = st.sidebar.slider("Average Service Time (minutes)", 2, 10, 5)
-staff_count = st.sidebar.slider("Number of Staff", 1, 6, 2)
-
-staff_experience = st.sidebar.selectbox(
+staff_experience = st.selectbox(
     "Staff Experience",
-    [1, 2, 3],
-    format_func=lambda x: {1: "New", 2: "Experienced", 3: "Expert"}[x]
-)
+    [("New", 1), ("Experienced", 2), ("Expert", 3)],
+    format_func=lambda x: x[0]
+)[1]  # Get the numeric value
 
-priority_ratio = st.sidebar.slider("Priority Ratio", 0.0, 0.5, 0.2)
-arrival_rate = st.sidebar.slider("Arrival Rate (people per 10 min)", 0, 12, 5)
-service_complexity = st.sidebar.slider("Service Complexity", 1, 4, 3)
+priority_ratio = st.number_input("Priority Ratio (0.0 - 0.5)", min_value=0.0, max_value=0.5, value=0.2, step=0.01)
+arrival_rate = st.number_input("Arrival Rate (people per 10 min)", min_value=0, max_value=12, value=5, step=1)
+service_complexity = st.number_input("Service Complexity", min_value=1, max_value=4, value=3, step=1)
 
-system_status = st.sidebar.selectbox(
+system_status = st.selectbox(
     "System Status",
-    [0, 1, 2],
-    format_func=lambda x: {0: "Normal", 1: "Slow", 2: "Down"}[x]
-)
+    [("Normal", 0), ("Slow", 1), ("Down", 2)],
+    format_func=lambda x: x[0]
+)[1]
 
-peak_hour = st.sidebar.selectbox(
+peak_hour = st.selectbox(
     "Peak Hour",
-    [0, 1],
-    format_func=lambda x: "Yes" if x == 1 else "No"
-)
+    [("No", 0), ("Yes", 1)],
+    format_func=lambda x: x[0]
+)[1]
 
 # -----------------------------
 # FUNCTION TO CALCULATE WAITING TIME (UNIQUE)
