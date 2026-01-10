@@ -41,7 +41,7 @@ peak_hour = st.sidebar.selectbox(
 )
 
 # -----------------------------
-# PREDICTION FUNCTION
+# FUNCTION TO CALCULATE WAITING TIME
 # -----------------------------
 def calculate_waiting_time(
     people_ahead,
@@ -59,10 +59,10 @@ def calculate_waiting_time(
     system_factor = {0: 1.0, 1: 1.3, 2: 1.6}[system_status]
     peak_factor = 1.25 if peak_hour == 1 else 1.0
 
-    # Base waiting time formula
+    # Base waiting time
     base_time = (people_ahead * avg_service_time) / max(1, staff_count)
 
-    # Waiting time with all adjustments
+    # Waiting time formula
     waiting_time = (
         base_time * experience_factor * system_factor * peak_factor
         + (priority_ratio * 10)
@@ -70,17 +70,24 @@ def calculate_waiting_time(
         + (service_complexity * 2)
     )
 
-    # Add randomness for uniqueness
+    # Add random noise for uniqueness
     noise = np.random.normal(0, 4)
     waiting_time = max(0, round(waiting_time + noise, 2))
 
-    return waiting_time
+    factors = {
+        "base_time": round(base_time,2),
+        "experience_factor": experience_factor,
+        "system_factor": system_factor,
+        "peak_factor": peak_factor
+    }
+
+    return waiting_time, factors
 
 # -----------------------------
 # BUTTON TO CALCULATE
 # -----------------------------
 if st.button("Predict Waiting Time"):
-    result = calculate_waiting_time(
+    result, factors = calculate_waiting_time(
         people_ahead,
         avg_service_time,
         staff_count,
@@ -91,14 +98,15 @@ if st.button("Predict Waiting Time"):
         system_status,
         peak_hour
     )
+
     st.success(f"⏱ Estimated Waiting Time: **{result} minutes**")
 
-    # Optional: show explanation of factors
+    # Show factor breakdown
     st.markdown("**Factors used in calculation:**")
-    st.markdown(f"- Base time = people ahead × avg service time / staff count")
-    st.markdown(f"- Experience factor = {experience_factor}")
-    st.markdown(f"- System factor = {system_factor}")
-    st.markdown(f"- Peak hour factor = {peak_factor}")
+    st.markdown(f"- Base time = {factors['base_time']} (people ahead × avg service time / staff count)")
+    st.markdown(f"- Experience factor = {factors['experience_factor']}")
+    st.markdown(f"- System factor = {factors['system_factor']}")
+    st.markdown(f"- Peak hour factor = {factors['peak_factor']}")
     st.markdown(f"- Priority impact = {priority_ratio*10}")
     st.markdown(f"- Arrival rate impact = {arrival_rate*1.5}")
     st.markdown(f"- Service complexity impact = {service_complexity*2}")
