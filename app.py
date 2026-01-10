@@ -1,98 +1,13 @@
 import streamlit as st
-import pandas as pd
-import joblib
-import os
 import numpy as np
-from sklearn.ensemble import RandomForestRegressor
+import pandas as pd
 
 # -----------------------------
 # PAGE CONFIG
 # -----------------------------
 st.set_page_config(page_title="Queue Waiting Time Predictor", layout="centered")
 st.title("🚦 Queue Waiting Time Predictor")
-st.write("Predict queue waiting time using Machine Learning")
-
-# -----------------------------
-# PATH HANDLING
-# -----------------------------
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_DIR = os.path.join(BASE_DIR, "model")
-DATA_DIR = os.path.join(BASE_DIR, "data")
-MODEL_PATH = os.path.join(MODEL_DIR, "queue_model.pkl")
-DATA_PATH = os.path.join(DATA_DIR, "queue_waiting_time_formula_guided_1000.csv")
-
-os.makedirs(MODEL_DIR, exist_ok=True)
-os.makedirs(DATA_DIR, exist_ok=True)
-
-# -----------------------------
-# FUNCTION: GENERATE DATASET IF MISSING
-# -----------------------------
-def generate_dataset(file_path, n=1000):
-    data = []
-    for _ in range(n):
-        people_ahead = np.random.randint(0, 50)
-        avg_service_time = np.random.randint(2, 10)
-        staff_count = np.random.randint(1, 6)
-        staff_experience = np.random.randint(1, 3)
-        priority_ratio = round(np.random.uniform(0, 0.5), 2)
-        arrival_rate = np.random.randint(0, 12)
-        service_complexity = np.random.randint(1, 4)
-        system_status = np.random.randint(0, 2)
-        peak_hour = np.random.randint(0, 1)
-
-        experience_factor = {1: 1.2, 2: 1.0, 3: 0.8}[staff_experience]
-        system_factor = {0: 1.0, 1: 1.3, 2: 1.6}[system_status]
-        peak_factor = 1.25 if peak_hour == 1 else 1.0
-
-        base_time = (people_ahead * avg_service_time) / max(1, staff_count)
-        waiting_time = (
-            base_time * experience_factor * system_factor * peak_factor
-            + (priority_ratio * 10)
-            + (arrival_rate * 1.5)
-            + (service_complexity * 2)
-        )
-        waiting_time += np.random.normal(0, 4)
-        waiting_time = max(0, round(waiting_time, 2))
-
-        data.append([
-            people_ahead, avg_service_time, staff_count, staff_experience,
-            priority_ratio, arrival_rate, service_complexity,
-            system_status, peak_hour, waiting_time
-        ])
-    columns = [
-        "people_ahead","avg_service_time","staff_count","staff_experience",
-        "priority_ratio","arrival_rate","service_complexity",
-        "system_status","peak_hour","waiting_time"
-    ]
-    df = pd.DataFrame(data, columns=columns)
-    df.to_csv(file_path, index=False)
-    return df
-
-# -----------------------------
-# LOAD OR GENERATE DATA
-# -----------------------------
-if os.path.exists(DATA_PATH):
-    df = pd.read_csv(DATA_PATH)
-else:
-    df = generate_dataset(DATA_PATH)
-
-# -----------------------------
-# TRAIN OR LOAD MODEL
-# -----------------------------
-@st.cache_resource
-def load_model():
-    if os.path.exists(MODEL_PATH):
-        return joblib.load(MODEL_PATH)
-
-    X = df.drop("waiting_time", axis=1)
-    y = df["waiting_time"]
-
-    model = RandomForestRegressor(n_estimators=300, random_state=42)
-    model.fit(X, y)
-    joblib.dump(model, MODEL_PATH)
-    return model
-
-model = load_model()
+st.write("Predict queue waiting time using real-life simulation formula.")
 
 # -----------------------------
 # USER INPUT
@@ -125,21 +40,66 @@ peak_hour = st.sidebar.selectbox(
     format_func=lambda x: "Yes" if x == 1 else "No"
 )
 
-input_data = pd.DataFrame([{
-    "people_ahead": people_ahead,
-    "avg_service_time": avg_service_time,
-    "staff_count": staff_count,
-    "staff_experience": staff_experience,
-    "priority_ratio": priority_ratio,
-    "arrival_rate": arrival_rate,
-    "service_complexity": service_complexity,
-    "system_status": system_status,
-    "peak_hour": peak_hour
-}])
+# -----------------------------
+# PREDICTION FUNCTION
+# -----------------------------
+def calculate_waiting_time(
+    people_ahead,
+    avg_service_time,
+    staff_count,
+    staff_experience,
+    priority_ratio,
+    arrival_rate,
+    service_complexity,
+    system_status,
+    peak_hour
+):
+    # Factors
+    experience_factor = {1: 1.2, 2: 1.0, 3: 0.8}[staff_experience]
+    system_factor = {0: 1.0, 1: 1.3, 2: 1.6}[system_status]
+    peak_factor = 1.25 if peak_hour == 1 else 1.0
+
+    # Base waiting time formula
+    base_time = (people_ahead * avg_service_time) / max(1, staff_count)
+
+    # Waiting time with all adjustments
+    waiting_time = (
+        base_time * experience_factor * system_factor * peak_factor
+        + (priority_ratio * 10)
+        + (arrival_rate * 1.5)
+        + (service_complexity * 2)
+    )
+
+    # Add randomness for uniqueness
+    noise = np.random.normal(0, 4)
+    waiting_time = max(0, round(waiting_time + noise, 2))
+
+    return waiting_time
 
 # -----------------------------
-# PREDICTION
+# BUTTON TO CALCULATE
 # -----------------------------
 if st.button("Predict Waiting Time"):
-    prediction = model.predict(input_data)
-    st.success(f"⏱ Estimated Waiting Time: **{round(prediction[0],2)} minutes**")
+    result = calculate_waiting_time(
+        people_ahead,
+        avg_service_time,
+        staff_count,
+        staff_experience,
+        priority_ratio,
+        arrival_rate,
+        service_complexity,
+        system_status,
+        peak_hour
+    )
+    st.success(f"⏱ Estimated Waiting Time: **{result} minutes**")
+
+    # Optional: show explanation of factors
+    st.markdown("**Factors used in calculation:**")
+    st.markdown(f"- Base time = people ahead × avg service time / staff count")
+    st.markdown(f"- Experience factor = {experience_factor}")
+    st.markdown(f"- System factor = {system_factor}")
+    st.markdown(f"- Peak hour factor = {peak_factor}")
+    st.markdown(f"- Priority impact = {priority_ratio*10}")
+    st.markdown(f"- Arrival rate impact = {arrival_rate*1.5}")
+    st.markdown(f"- Service complexity impact = {service_complexity*2}")
+    st.markdown(f"- Random noise added for uniqueness")
