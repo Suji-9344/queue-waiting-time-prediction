@@ -111,3 +111,49 @@ if st.button("Predict Waiting Time"):
     st.markdown(f"- Arrival rate impact = {arrival_rate*1.5}")
     st.markdown(f"- Service complexity impact = {service_complexity*2}")
     st.markdown(f"- Random noise added for uniqueness")
+    def calculate_waiting_time(
+    people_ahead,
+    avg_service_time,
+    staff_count,
+    staff_experience,
+    priority_ratio,
+    arrival_rate,
+    service_complexity,
+    system_status,
+    peak_hour
+):
+    # Base factors
+    experience_factor = {1: 1.2, 2: 1.0, 3: 0.8}[staff_experience]
+    system_factor = {0: 1.0, 1: 1.3, 2: 1.6}[system_status]
+    peak_factor = 1.25 if peak_hour == 1 else 1.0
+
+    # Introduce small random fluctuation in factors for uniqueness
+    experience_factor *= np.random.uniform(0.95, 1.05)
+    system_factor *= np.random.uniform(0.95, 1.05)
+    peak_factor *= np.random.uniform(0.95, 1.05)
+
+    # Base waiting time
+    base_time = (people_ahead * avg_service_time) / max(1, staff_count)
+
+    # Waiting time formula with noise proportional to base_time
+    noise = np.random.normal(0, base_time * 0.1)  # 10% of base_time
+    waiting_time = (
+        base_time * experience_factor * system_factor * peak_factor
+        + (priority_ratio * 10)
+        + (arrival_rate * 1.5)
+        + (service_complexity * 2)
+        + noise
+    )
+
+    waiting_time = max(0, round(waiting_time, 2))
+
+    factors = {
+        "base_time": round(base_time, 2),
+        "experience_factor": round(experience_factor, 2),
+        "system_factor": round(system_factor, 2),
+        "peak_factor": round(peak_factor, 2),
+        "noise": round(noise, 2)
+    }
+
+    return waiting_time, factors
+
