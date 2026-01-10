@@ -33,7 +33,7 @@ def calculate_waiting_time(
     system_factor = {0: 1.0, 1: 1.3, 2: 1.6}[system_status]
     peak_factor = 1.25 if peak_hour == 1 else 1.0
 
-    # Add small random variation to make output unique
+    # Add small random variation for uniqueness
     experience_factor *= np.random.uniform(0.95, 1.05)
     system_factor *= np.random.uniform(0.95, 1.05)
     peak_factor *= np.random.uniform(0.95, 1.05)
@@ -138,7 +138,12 @@ with tab2:
         factors = st.session_state["last_factors"]
         inputs = st.session_state["inputs"]
 
-        # 1️⃣ Color-coded message based on waiting time
+        # 1️⃣ Visualize Waiting Time
+        max_wait = 120
+        st.progress(min(result / max_wait, 1.0))
+        st.metric(label="Waiting Time Visual", value=f"{result} min")
+
+        # 2️⃣ Random Fun Factor (color-coded message)
         if result < 15:
             st.success("✅ Quick! You barely have to wait.")
         elif result < 45:
@@ -148,7 +153,16 @@ with tab2:
         else:
             st.error("🚨 Very long queue! Maybe come later.")
 
-        # 2️⃣ Scenario simulation: Vary staff count
+        # 3️⃣ Priority Recommendation
+        if inputs["staff_count"] < 3:
+            st.info("💡 Consider adding more staff to reduce waiting time.")
+        if inputs["peak_hour"]:
+            st.info("⚠️ It's peak hour, expect slightly longer waits.")
+        if inputs["arrival_rate"] > 8:
+            st.info("🚨 High arrival rate detected. Try online booking if available.")
+
+        # 4️⃣ Dynamic Scenario Simulation
+        st.subheader("Scenario Simulation: Vary Staff Count")
         staff_options = list(range(1, 7))
         sim_results = [
             calculate_waiting_time(
@@ -161,15 +175,7 @@ with tab2:
         st.line_chart(sim_df.set_index("Staff Count"))
         st.markdown("**Scenario Simulation:** Changing staff count affects waiting time.")
 
-        # 3️⃣ Priority recommendations
-        if inputs["staff_count"] < 3:
-            st.info("💡 Consider adding more staff to reduce waiting time.")
-        if inputs["peak_hour"]:
-            st.info("⚠️ It's peak hour, expect slightly longer waits.")
-        if inputs["arrival_rate"] > 8:
-            st.info("🚨 High arrival rate detected. Try online booking if available.")
-
-        # 4️⃣ Downloadable prediction
+        # 5️⃣ Downloadable Prediction
         download_df = pd.DataFrame([{
             **inputs,
             "predicted_waiting_time": result
