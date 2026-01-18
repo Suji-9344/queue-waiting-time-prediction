@@ -16,12 +16,8 @@ st.set_page_config(
 # -----------------------------
 st.markdown("""
 <style>
-body {
-    background-color: #f0f8ff;
-}
-h1, h2, h3 {
-    color: #0d47a1;
-}
+body {background-color: #f0f8ff;}
+h1,h2,h3 {color: #0d47a1;}
 .card {
     background-color: #ffffff;
     padding: 15px;
@@ -49,11 +45,9 @@ if "page" not in st.session_state:
 # -----------------------------
 # WAITING TIME FUNCTION
 # -----------------------------
-def calculate_waiting_time(
-    people_ahead, avg_service_time, staff_count, staff_experience,
-    priority_ratio, arrival_rate, service_complexity,
-    system_status, peak_hour
-):
+def calculate_waiting_time(people_ahead, avg_service_time, staff_count, staff_experience,
+                           priority_ratio, arrival_rate, service_complexity,
+                           system_status, peak_hour):
     experience_factor = {1: 1.2, 2: 1.0, 3: 0.8}[staff_experience]
     system_factor = {0: 1.0, 1: 1.3, 2: 1.6}[system_status]
     peak_factor = 1.25 if peak_hour == 1 else 1.0
@@ -74,7 +68,6 @@ def calculate_waiting_time(
     )
 
     waiting_time = max(0, round(waiting_time, 2))
-
     factors = {
         "base_time": round(base_time, 2),
         "experience_factor": round(experience_factor, 2),
@@ -82,7 +75,6 @@ def calculate_waiting_time(
         "peak_factor": round(peak_factor, 2),
         "noise": round(noise, 2)
     }
-
     return waiting_time, factors
 
 # -----------------------------
@@ -103,50 +95,56 @@ if st.session_state.page == 1:
     st.title("🚦 Smart Queue Waiting Time Predictor")
     st.subheader("📝 Enter Queue Details")
 
-    with st.container():
-        st.markdown('<div class="card">', unsafe_allow_html=True)
+    people_ahead = st.number_input("👥 People Ahead", 0, 50, 10, 1)
+    avg_service_time = st.number_input("⏱ Average Service Time (minutes)", 2, 10, 5, 1)
+    staff_count = st.number_input("👨‍💼 Number of Staff", 1, 6, 2, 1)
 
-        people_ahead = st.number_input("👥 People Ahead", 0, 50, 10, 1)
-        avg_service_time = st.number_input("⏱ Average Service Time (minutes)", 2, 10, 5, 1)
-        staff_count = st.number_input("👨‍💼 Number of Staff", 1, 6, 2, 1)
+    staff_experience = st.selectbox(
+        "Staff Experience",
+        [("New", 1), ("Experienced", 2), ("Expert", 3)],
+        format_func=lambda x: x[0]
+    )[1]
 
-        staff_experience = st.selectbox(
-            "Staff Experience",
-            [("New", 1), ("Experienced", 2), ("Expert", 3)],
-            format_func=lambda x: x[0]
-        )[1]
+    priority_ratio = st.number_input("Priority Ratio (0.0 - 0.5)", 0.0, 0.5, 0.2, 0.01)
+    arrival_rate = st.number_input("📈 Arrival Rate (people per 10 min)", 0, 12, 5, 1)
+    service_complexity = st.number_input("Service Complexity", 1, 4, 3, 1)
 
-        priority_ratio = st.number_input("Priority Ratio (0.0 - 0.5)", 0.0, 0.5, 0.2, 0.01)
-        arrival_rate = st.number_input("📈 Arrival Rate (people per 10 min)", 0, 12, 5, 1)
-        service_complexity = st.number_input("Service Complexity", 1, 4, 3, 1)
+    system_status = st.selectbox(
+        "System Status",
+        [("Normal", 0), ("Slow", 1), ("Down", 2)],
+        format_func=lambda x: x[0]
+    )[1]
 
-        system_status = st.selectbox(
-            "System Status",
-            [("Normal", 0), ("Slow", 1), ("Down", 2)],
-            format_func=lambda x: x[0]
-        )[1]
-
-        peak_hour = st.selectbox(
-            "Peak Hour",
-            [("No", 0), ("Yes", 1)],
-            format_func=lambda x: x[0]
-        )[1]
-
-        st.markdown('</div>', unsafe_allow_html=True)
+    peak_hour = st.selectbox(
+        "Peak Hour",
+        [("No", 0), ("Yes", 1)],
+        format_func=lambda x: x[0]
+    )[1]
 
     if st.button("🔍 Predict Waiting Time ➡️"):
         result, factors = calculate_waiting_time(
             people_ahead, avg_service_time, staff_count, staff_experience,
             priority_ratio, arrival_rate, service_complexity, system_status, peak_hour
         )
+        # STORE ONLY NEEDED VALUES IN SESSION STATE
         st.session_state.result = result
         st.session_state.factors = factors
-        st.session_state.inputs = locals()
+        st.session_state.inputs = {
+            "people_ahead": people_ahead,
+            "avg_service_time": avg_service_time,
+            "staff_count": staff_count,
+            "staff_experience": staff_experience,
+            "priority_ratio": priority_ratio,
+            "arrival_rate": arrival_rate,
+            "service_complexity": service_complexity,
+            "system_status": system_status,
+            "peak_hour": peak_hour
+        }
         st.session_state.page = 2
         st.experimental_rerun()
 
 # -----------------------------
-# PAGE 2: RESULTS & SMART FEATURES
+# PAGE 2: RESULTS
 # -----------------------------
 elif st.session_state.page == 2:
     st.title("📊 Queue Analysis & Smart Decisions")
@@ -157,9 +155,8 @@ elif st.session_state.page == 2:
 
     # Scrollable output
     st.subheader("⏱ Waiting Time Result")
-    st.markdown(f'<div class="scroll-box">', unsafe_allow_html=True)
+    st.markdown('<div class="scroll-box">', unsafe_allow_html=True)
     st.write(f"**Estimated Waiting Time:** {result} minutes")
-
     st.markdown("**Factors:**")
     for k, v in factors.items():
         st.write(f"- {k.replace('_',' ').title()} = {v}")
@@ -176,7 +173,6 @@ elif st.session_state.page == 2:
     reduced_time = max(0, reduced_time)
     st.write(f"👥 People Served Recently: {served_people}")
     st.write(f"⏬ Updated Waiting Time: {reduced_time} minutes")
-
     if reduced_time < result:
         st.success("✅ Queue is moving! Your waiting time has reduced automatically.")
     else:
@@ -191,7 +187,7 @@ elif st.session_state.page == 2:
     if inputs["peak_hour"]:
         st.info("⏰ Peak hour detected – delays are normal")
 
-    # What-if simulation
+    # Scenario Simulation
     st.subheader("📊 Scenario Simulation – Staff Count")
     staff_range = range(1, 7)
     sim_times = [
@@ -206,19 +202,10 @@ elif st.session_state.page == 2:
     df = pd.DataFrame({"Staff Count": staff_range, "Waiting Time": sim_times}).set_index("Staff Count")
     st.line_chart(df)
 
-    # Best time recommendation
+    # Best visiting time
     st.subheader("🕒 Best Time to Visit")
     best_time = "2:30 PM – 4:00 PM" if inputs["peak_hour"] else "Any non-peak hour"
     st.success(f"Recommended visiting time: {best_time}")
-
-    # Download CSV
-    download_df = pd.DataFrame([{
-        "Initial Waiting Time": result,
-        "Updated Waiting Time": reduced_time,
-        "Staff Count": inputs["staff_count"],
-        "Arrival Rate": inputs["arrival_rate"]
-    }])
-    st.download_button("📥 Download Analysis CSV", download_df.to_csv(index=False), "queue_analysis.csv")
 
     # Navigation Buttons
     col1, col2 = st.columns(2)
@@ -227,12 +214,12 @@ elif st.session_state.page == 2:
             st.session_state.page = 1
             st.experimental_rerun()
     with col2:
-        if st.button("🔄 Recalculate / Next"):
+        if st.button("🔄 Next / What-If Simulation"):
             st.session_state.page = 3
             st.experimental_rerun()
 
 # -----------------------------
-# PAGE 3: ADVANCED WHAT-IF SIMULATION
+# PAGE 3: WHAT-IF SIMULATION
 # -----------------------------
 elif st.session_state.page == 3:
     st.title("🔄 What-If Simulation")
