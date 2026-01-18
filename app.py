@@ -1,16 +1,14 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
-from PIL import Image
-import time
 
 # -----------------------------
 # PAGE CONFIG
 # -----------------------------
 st.set_page_config(
-    page_title="Smart Queue Waiting Time Predictor",
+    page_title="Smart Queue Predictor",
     page_icon="⏱",
-    layout="wide"
+    layout="centered"
 )
 
 # -----------------------------
@@ -22,10 +20,10 @@ body {background-color: #f0f8ff;}
 h1,h2,h3 {color: #0d47a1;}
 .card {
     background-color: #ffffff;
-    padding: 20px;
-    border-radius: 15px;
-    box-shadow: 2px 2px 15px rgba(0,0,0,0.15);
-    margin-bottom: 20px;
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 15px;
 }
 .scroll-box {
     max-height: 250px;
@@ -39,20 +37,16 @@ h1,h2,h3 {color: #0d47a1;}
 """, unsafe_allow_html=True)
 
 # -----------------------------
-# LOAD ICON IMAGES
-# -----------------------------
-# You can replace these with your own png images or emojis
-people_icon = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
-staff_icon = "https://cdn-icons-png.flaticon.com/512/2922/2922510.png"
-clock_icon = "https://cdn-icons-png.flaticon.com/512/2921/2921222.png"
-
-# -----------------------------
 # SESSION STATE INIT
 # -----------------------------
-if "page" not in st.session_state: st.session_state.page = 1
-if "inputs" not in st.session_state: st.session_state.inputs = {}
-if "result" not in st.session_state: st.session_state.result = 0
-if "factors" not in st.session_state: st.session_state.factors = {}
+if "page" not in st.session_state:
+    st.session_state.page = 1
+if "inputs" not in st.session_state:
+    st.session_state.inputs = {}
+if "result" not in st.session_state:
+    st.session_state.result = 0
+if "factors" not in st.session_state:
+    st.session_state.factors = {}
 
 # -----------------------------
 # WAITING TIME FUNCTION
@@ -85,7 +79,7 @@ def calculate_waiting_time(people_ahead, avg_service_time, staff_count, staff_ex
     return wait_time, factors
 
 # -----------------------------
-# QUEUE MOOD FUNCTION
+# QUEUE MOOD
 # -----------------------------
 def queue_mood(wait_time):
     if wait_time <= 15: return "🟢 Fast – almost no wait", "green"
@@ -96,29 +90,20 @@ def queue_mood(wait_time):
 # FRONT PAGE
 # -----------------------------
 if st.session_state.page == 1:
-    st.title("🚦 Smart Queue Waiting Time Predictor")
-    st.markdown("""
-    **How it works:**  
-    1️⃣ Enter number of people, staff, and service details.  
-    2️⃣ System calculates **estimated waiting time** in real-time.  
-    3️⃣ Visual queue indicators, smart suggestions, and scenario simulation.
-    """)
+    st.title("🚦 Queue Waiting Time Predictor")
+    
+    
 
-    st.markdown("---")
     with st.form("input_form"):
-        col1, col2, col3 = st.columns([1,1,1])
-        with col1:
-            people_ahead = st.number_input(f"👥 People Ahead", 0, 50, 10, 1)
-            avg_service_time = st.number_input(f"⏱ Avg Service Time (minutes)", 2, 10, 5, 1)
-        with col2:
-            staff_count = st.number_input(f"👨‍💼 Number of Staff", 1, 6, 2, 1)
-            staff_exp = st.selectbox(f"Staff Experience", ["New","Experienced","Expert"], 0)
-            staff_exp_map = {"New":1,"Experienced":2,"Expert":3}[staff_exp]
-        with col3:
-            priority_ratio = st.number_input("Priority Ratio (0.0 - 0.5)", 0.0, 0.5, 0.2, 0.01)
-            arrival_rate = st.number_input("📈 Arrival Rate per 10 min", 0, 12, 5, 1)
-            service_complexity = st.number_input("Service Complexity (1-4)", 1, 4, 3, 1)
+        people_ahead = st.number_input("👥 People Ahead", 0, 50, 10, 1)
+        avg_service_time = st.number_input("⏱ Avg Service Time (minutes)", 2, 10, 5, 1)
+        staff_count = st.number_input("👨‍💼 Number of Staff", 1, 6, 2, 1)
+        staff_exp = st.selectbox("Staff Experience", ["New","Experienced","Expert"], 0)
+        staff_exp_map = {"New":1,"Experienced":2,"Expert":3}[staff_exp]
 
+        priority_ratio = st.number_input("Priority Ratio (0.0 - 0.5)", 0.0, 0.5, 0.2, 0.01)
+        arrival_rate = st.number_input("📈 Arrival Rate per 10 min", 0, 12, 5, 1)
+        service_complexity = st.number_input("Service Complexity (1-4)", 1, 4, 3, 1)
         system_status = st.selectbox("System Status", ["Normal","Slow","Down"], 0)
         system_status_map = {"Normal":0,"Slow":1,"Down":2}[system_status]
         peak_hour = st.selectbox("Peak Hour", ["No","Yes"], 0)
@@ -154,14 +139,7 @@ elif st.session_state.page == 2:
     factors = st.session_state.factors
     inputs = st.session_state.inputs
 
-    # Animated Queue Progress Bar
-    st.subheader("🚶 Queue Progress")
-    queue_bar = st.progress(0)
-    for i in range(101):
-        queue_bar.progress(i)
-        time.sleep(0.01)  # animation speed
-
-    # Scrollable factors output
+    # Scrollable factors
     st.markdown('<div class="scroll-box">', unsafe_allow_html=True)
     st.write(f"⏱ **Estimated Waiting Time:** {result} minutes")
     st.write("**Factors considered:**")
@@ -169,21 +147,16 @@ elif st.session_state.page == 2:
         st.write(f"- {k}: {v}")
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Queue Mood with color
+    # Queue mood
     mood, color = queue_mood(result)
     st.markdown(f"**Status:** <span style='color:{color};font-weight:bold'>{mood}</span>", unsafe_allow_html=True)
 
-    # Live Queue Movement Card
+    # Live queue movement
     st.subheader("🔄 Live Queue Movement")
     reduced_time = max(0, round(result - (inputs["staff_count"] * inputs["avg_service_time"] * 0.5),2))
-    col1, col2, col3 = st.columns(3)
-    col1.image(people_icon, width=50)
-    col1.write(f"👥 Served: {inputs['staff_count']}")
-    col2.image(staff_icon, width=50)
-    col2.write(f"👨‍💼 Staff: {inputs['staff_count']}")
-    col3.image(clock_icon, width=50)
-    col3.write(f"⏬ Updated Wait: {reduced_time} min")
-    if reduced_time < result: st.success("✅ Queue moving, waiting time reduced!")
+    st.write(f"👥 People Served Recently: {inputs['staff_count']}")
+    st.write(f"⏬ Updated Waiting Time: {reduced_time} minutes")
+    if reduced_time < result: st.success("✅ Queue is moving, waiting time reduced!")
     else: st.warning("⚠️ Queue moving slowly")
 
     # Scenario simulation
@@ -199,7 +172,11 @@ elif st.session_state.page == 2:
     df = pd.DataFrame({"Staff Count": staff_range, "Waiting Time": sim_times}).set_index("Staff Count")
     st.line_chart(df)
 
-    # Navigation Buttons
+    # Best time to visit
+    best_time = "2:30 PM – 4:00 PM" if inputs["peak_hour"] else "Any non-peak hour"
+    st.success(f"🕒 Recommended Time to Visit: {best_time}")
+
+    # Navigation buttons
     col1, col2 = st.columns(2)
     with col1:
         if st.button("⬅️ Back"):
