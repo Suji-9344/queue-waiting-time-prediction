@@ -22,6 +22,18 @@ st.markdown("""
 .green {color:#2e7d32;}
 .orange {color:#ff8f00;}
 .red {color:#c62828;}
+.alert {
+    background:#e8f5e9;
+    padding:12px;
+    border-radius:8px;
+    font-weight:bold;
+}
+.done {
+    background:#e3f2fd;
+    padding:12px;
+    border-radius:8px;
+    font-weight:bold;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -36,7 +48,8 @@ defaults = {
     "system": "Normal",
     "peak": False,
     "served": 0,
-    "running": False
+    "running": False,
+    "completed": False
 }
 
 for k, v in defaults.items():
@@ -51,6 +64,8 @@ def system_factor(sys):
     return {"Normal": 1.0, "Slow": 1.3, "Down": 1.6}[sys]
 
 def predict_wait(queue):
+    if queue <= 0:
+        return 0
     base = (queue * st.session_state.service_time) / st.session_state.staff
     return round(
         base *
@@ -76,7 +91,7 @@ with st.container():
 
     st.session_state.queue = st.slider("👥 Total People in Queue", 1, 50, st.session_state.queue)
     st.session_state.position = st.slider(
-        "🙋 Your Position in Queue (Naa ethanavathu aala nikkuren)",
+        "🙋 Your Position in Queue",
         1, st.session_state.queue, st.session_state.position
     )
     st.session_state.staff = st.slider("👨‍💼 Staff Count", 1, 5, st.session_state.staff)
@@ -91,6 +106,7 @@ with st.container():
 if st.button("▶️ Start Live Queue"):
     st.session_state.running = True
     st.session_state.served = 0
+    st.session_state.completed = False
 
 # ---------------- LIVE QUEUE ----------------
 if st.session_state.running:
@@ -100,7 +116,10 @@ if st.session_state.running:
 
     for i in range(30):
 
-        served_now = int(st.session_state.staff * experience_factor(st.session_state.experience))
+        if st.session_state.completed:
+            break
+
+        served_now = max(1, int(st.session_state.staff * experience_factor(st.session_state.experience)))
         arrived_now = st.session_state.arrival_rate
 
         st.session_state.queue = max(0, st.session_state.queue - served_now + arrived_now)
@@ -110,40 +129,42 @@ if st.session_state.running:
         wait_time = predict_wait(st.session_state.position)
         mood, color = queue_mood(wait_time)
 
-        delay_reasons = []
-        if st.session_state.queue > 25:
-            delay_reasons.append("👥 High crowd")
-        if st.session_state.experience == "New":
-            delay_reasons.append("🎓 New staff")
-        if st.session_state.system != "Normal":
-            delay_reasons.append("🖥 System issue")
-        if st.session_state.peak:
-            delay_reasons.append("🚨 Peak hour")
-        if st.session_state.arrival_rate > 1:
-            delay_reasons.append("📈 High arrival rate")
+        # ---------------- ALERT LOGIC ----------------
+        alert_msg = ""
+        if st.session_state.position == 1:
+            alert_msg = "⏰ Your turn is coming soon. Please be ready."
+        elif st.session_state.position == 0:
+            alert_msg = "✅ Your work is completed. Thank you!"
+            st.session_state.completed = True
 
         box.markdown(f"""
         <div class="card">
         <h3>⏳ Live Waiting Time: {wait_time} mins</h3>
         <h4 class="{color}">{mood}</h4>
 
-        👥 Queue la innum irukkura aal: <b>{st.session_state.queue}</b><br>
-        🙋 Neenga nikkura position: <b>{st.session_state.position}</b><br>
-        ✅ Serve pannina aal: <b>{st.session_state.served}</b><br><br>
+        👥 People remaining in queue: <b>{st.session_state.queue}</b><br>
+        🙋 Your current position: <b>{st.session_state.position}</b><br>
+        ✅ People served so far: <b>{st.session_state.served}</b><br><br>
 
         🗣 <b>Tamil Explanation:</b><br>
         "Neenga queue la {st.session_state.position}-avathu aala nikkuringa.
         Innum {st.session_state.position} per service mudiyanum.
         Approximate-ah {wait_time} nimisham wait pannanum."
-
         <br><br>
-        ❗ <b>Delay Reasons:</b><br>
-        {"<br>".join(delay_reasons) if delay_reasons else "No major delay"}
+
+        🗣 <b>English Explanation:</b><br>
+        "You are currently at position {st.session_state.position} in the queue.
+        Approximately {wait_time} minutes remaining for your service."
+        <br><br>
+
+        {f'<div class="alert">{alert_msg}</div>' if alert_msg and not st.session_state.completed else ''}
+        {f'<div class="done">{alert_msg}</div>' if st.session_state.completed else ''}
         </div>
         """, unsafe_allow_html=True)
 
-        progress.progress((i + 1) * 3)
+        progress.progress(min(100, (i + 1) * 4))
         time.sleep(1)
 
-    st.success("✅ Live queue simulation completed")
-    st.session_state.running = False
+    if st.session_state.completed:
+        st.success("🎉 Queue process completed successfully")
+        st.session_state.running = False
