@@ -1,7 +1,6 @@
 import streamlit as st
 import time
 from datetime import datetime, timedelta
-from fpdf import FPDF
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(
@@ -10,7 +9,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# ---------------- SESSION STATE INIT ----------------
+# ---------------- SESSION STATE ----------------
 defaults = {
     "page": 1,
     "people_ahead": 10,
@@ -30,7 +29,7 @@ for k, v in defaults.items():
         st.session_state[k] = v
 
 # ---------------- ML-LIKE PREDICTION ----------------
-def ml_wait_prediction(p, s, staff, arr, exp, sys, peak):
+def predict_wait(p, s, staff, arr, exp, sys, peak):
     exp_w = {"New": 1.2, "Experienced": 1.0, "Expert": 0.8}[exp]
     sys_w = {"Normal": 1.0, "Slow": 1.3, "Down": 1.6}[sys]
     peak_w = 1.25 if peak else 1.0
@@ -57,10 +56,11 @@ if st.session_state.page == 1:
     st.session_state.system_status = st.selectbox(
         "🖥 System Status", ["Normal", "Slow", "Down"]
     )
+
     peak = st.checkbox("🚨 Peak Hour")
 
     if st.button("🔍 Predict Waiting Time"):
-        st.session_state.wait_time = ml_wait_prediction(
+        st.session_state.wait_time = predict_wait(
             st.session_state.people_ahead,
             st.session_state.service_time,
             st.session_state.staff,
@@ -75,9 +75,8 @@ if st.session_state.page == 1:
 
     if st.session_state.predicted:
         end_time = datetime.now() + timedelta(minutes=st.session_state.wait_time)
-
         st.success(f"⏳ Waiting Time: {st.session_state.wait_time} minutes")
-        st.info(f"🕒 Expected Turn: {end_time.strftime('%I:%M %p')}")
+        st.info(f"🕒 Expected Turn Time: {end_time.strftime('%I:%M %p')}")
 
         if st.button("➡️ Start Live Queue"):
             st.session_state.page = 2
@@ -105,14 +104,14 @@ elif st.session_state.page == 2:
 
             if remaining == 3:
                 st.warning("🔔 Your turn is coming soon!")
-                st.info("🔊 Voice Alert: 'Your turn is coming in few minutes'")
+                st.info("🔊 Voice Alert: Your turn is coming in few minutes")
 
             time.sleep(1)
 
         st.success("🎉 Your work is completed!")
 
     # ---------------- QR CODE ----------------
-    st.subheader("📱 Scan QR for Live Status")
+    st.subheader("📱 Scan QR for Live Queue Status")
     qr_text = f"Position:{st.session_state.position}, Waiting:{st.session_state.wait_time} mins"
     qr_url = f"https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl={qr_text}"
     st.image(qr_url)
@@ -126,49 +125,41 @@ elif st.session_state.page == 3:
     st.title("💡 Smart Suggestions")
 
     st.markdown("### ⭐ **BEST VISIT TIME: 4:00 PM – 6:00 PM**")
-    st.write("👥 High crowd increases delay")
-    st.write("🎓 Expert staff reduces service time")
-    st.write("🖥 System slow causes longer queues")
+    st.write("👥 Avoid peak crowd times")
+    st.write("🎓 Expert staff reduces delay")
+    st.write("🖥 System slow increases waiting")
     st.write("📉 Visit during non-peak hours")
 
     if st.button("➡️ Download Report"):
         st.session_state.page = 4
         st.rerun()
 
-# ================= PAGE 4 : PDF REPORT =================
+# ================= PAGE 4 : REPORT =================
 elif st.session_state.page == 4:
-    st.title("📄 Queue PDF Report")
+    st.title("📄 Queue Report")
 
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
+    report = f"""
+SMART QUEUE MANAGEMENT REPORT
+----------------------------
 
-    content = [
-        "SMART QUEUE REPORT",
-        "",
-        f"People Ahead: {st.session_state.people_ahead}",
-        f"Staff Count: {st.session_state.staff}",
-        f"Service Time: {st.session_state.service_time} mins",
-        f"Arrival Rate: {st.session_state.arrival_rate}/min",
-        f"Staff Experience: {st.session_state.staff_exp}",
-        f"System Status: {st.session_state.system_status}",
-        "",
-        f"Predicted Waiting Time: {st.session_state.wait_time} mins",
-        "BEST VISIT TIME: 4:00 PM – 6:00 PM",
-        "",
-        "Status: Queue completed successfully"
-    ]
+People Ahead: {st.session_state.people_ahead}
+Staff Count: {st.session_state.staff}
+Service Time: {st.session_state.service_time} mins
+Arrival Rate: {st.session_state.arrival_rate} people/min
+Staff Experience: {st.session_state.staff_exp}
+System Status: {st.session_state.system_status}
 
-    for line in content:
-        pdf.cell(0, 10, line, ln=True)
+Predicted Waiting Time: {st.session_state.wait_time} minutes
 
-    pdf_output = pdf.output(dest="S").encode("latin-1")
+BEST VISIT TIME: 4:00 PM – 6:00 PM
+
+STATUS: Queue completed successfully
+"""
 
     st.download_button(
-        "📥 Download PDF Report",
-        pdf_output,
-        file_name="queue_report.pdf",
-        mime="application/pdf"
+        "📥 Download Report",
+        report,
+        file_name="queue_report.txt"
     )
 
     if st.button("🏠 Back to Home"):
