@@ -1,215 +1,159 @@
-import streamlit as st
-import time
+[11:38 AM, 1/19/2026] Suji🥰: import streamlit as st
+import numpy as np
 from datetime import datetime, timedelta
-import random
+from reportlab.platypus import SimpleDocTemplate, Paragraph
+from reportlab.lib.styles import getSampleStyleSheet
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(
-    page_title="Smart Live Queue Predictor",
-    page_icon="🚦",
+    page_title="Queue Waiting Time Predictor",
+    page_icon="⏱",
     layout="centered"
 )
 
-# ---------------- STYLE ----------------
-st.markdown("""
-<style>
-.card {
-    background:white;
-    padding:18px;
-    border-radius:12px;
-    box-shadow:2px 2px 10px rgba(0,0,0,0.15);
-    margin-bottom:15px;
-}
-.alert {
-    background:#fff3cd;
-    padding:10px;
-    border-radius:8px;
-    font-weight:bold;
-}
-.done {
-    background:#d1e7dd;
-    padding:12px;
-    border-radius:8px;
-    font-weight:bold;
-}
-.green {color:#2e7d32;}
-.orange {color:#ff8f00;}
-.red {color:#c62828;}
-</style>
-""", unsafe_allow_html=True)
+st.title("🚦 Queue Waiting Time Predictor")
+st.write("Predict waiting time using real-life queue conditions")
 
-# ---------------- SESSION DEFAULTS ----------------
-defaults = {
-    "page": 1,
-    "queue": 20,
-    "position": 5,
-    "staff": 2,
-    "service_time": 4,
-    "arrival_rate": 1,
-    "experience": "Average",
-    "system": "Normal",
-    "peak": False,
-    "served": 0,
-    "running": False,
-    "completed": False,
-    "staff_score": 80  # default performance
-}
+# ---------------- FUNCTION ----------------
+def calculate_waiting_time(people, avg_service, staff, experience, system, peak):
+    exp_factor = {"New": 1.2, "Experienced": 1.0, "Expert": 0.85}[experience]
+    sys_factor = {"Normal": 1.0, "Slow": 1.3, "Down": 1.6}[system]
+    peak_factor = 1.25 if pea…
+[11:38 AM, 1/19/2026] Suji🥰: import streamlit as st
+import numpy as np
+from datetime import datetime, timedelta
+from reportlab.platypus import SimpleDocTemplate, Paragraph
+from reportlab.lib.styles import getSampleStyleSheet
 
-for k, v in defaults.items():
-    if k not in st.session_state:
-        st.session_state[k] = v
+# ---------------- PAGE CONFIG ----------------
+st.set_page_config(
+    page_title="Queue Waiting Time Predictor",
+    page_icon="⏱",
+    layout="centered"
+)
 
-# ---------------- FUNCTIONS ----------------
-def exp_factor(exp):
-    return {"New": 0.8, "Average": 1.0, "Expert": 1.3}[exp]
+st.title("🚦 Queue Waiting Time Predictor")
+st.write("Predict waiting time using real-life queue conditions")
 
-def sys_factor(sys):
-    return {"Normal": 1.0, "Slow": 1.3, "Down": 1.6}[sys]
+# ---------------- FUNCTION ----------------
+def calculate_waiting_time(people, avg_service, staff, experience, system, peak):
+    exp_factor = {"New": 1.2, "Experienced": 1.0, "Expert": 0.85}[experience]
+    sys_factor = {"Normal": 1.0, "Slow": 1.3, "Down": 1.6}[system]
+    peak_factor = 1.25 if peak else 1.0
 
-def predict_wait(queue):
-    if queue <= 0:
-        return 0
-    base = (queue * st.session_state.service_time) / st.session_state.staff
-    wait = base * exp_factor(st.session_state.experience) * sys_factor(st.session_state.system) * (1.3 if st.session_state.peak else 1.0)
-    return round(wait, 2)
+    base_time = (people * avg_service) / max(1, staff)
+    noise = np.random.normal(0, base_time * 0.1)
 
-def mood(wait):
-    if wait <= 15:
-        return "🟢 Low Crowd", "green"
-    elif wait <= 30:
-        return "🟡 Medium Crowd", "orange"
+    waiting_time = base_time * exp_factor * sys_factor * peak_factor + noise
+    waiting_time = max(0, round(waiting_time, 2))
+
+    factors = {
+        "Base Time": round(base_time, 2),
+        "Experience Factor": round(exp_factor, 2),
+        "System Factor": round(sys_factor, 2),
+        "Peak Factor": round(peak_factor, 2),
+        "Noise": round(noise, 2)
+    }
+
+    return waiting_time, factors
+
+def detect_delay(people, experience, system, peak):
+    reasons = []
+    if people > 25:
+        reasons.append("👥 High number of people in queue")
+    if experience == "New":
+        reasons.append("🎓 New or less experienced staff")
+    if system != "Normal":
+        reasons.append("🖥 System is slow or down")
+    if peak:
+        reasons.append("🚨 Peak hour traffic")
+    return reasons
+
+def best_visit_time(peak):
+    return "2:30 PM – 4:00 PM" if peak else "Any non-peak hour (Morning/Afternoon)"
+
+# ---------------- INPUTS ----------------
+st.subheader("Input Parameters")
+
+people = st.number_input("👥 People Ahead", 0, 50, 15)
+avg_service = st.number_input("⏱ Average Service Time (minutes)", 2, 10, 5)
+staff = st.number_input("👨‍💼 Number of Staff", 1, 6, 2)
+
+experience = st.selectbox("🎓 Staff Experience", ["New", "Experienced", "Expert"])
+system = st.selectbox("🖥 System Status", ["Normal", "Slow", "Down"])
+peak = st.selectbox("🚨 Peak Hour", ["No", "Yes"]) == "Yes"
+
+# ---------------- PREDICT ----------------
+if st.button("Predict Waiting Time"):
+    wait_time, factors = calculate_waiting_time(
+        people, avg_service, staff, experience, system, peak
+    )
+
+    now = datetime.now()
+    finish_time = now + timedelta(minutes=wait_time)
+
+    st.success(f"⏱ Estimated Waiting Time: *{wait_time} minutes*")
+
+    st.write("### ⏰ Time Details")
+    st.write(f"🕒 Current Time: *{now.strftime('%I:%M %p')}*")
+    st.write(f"✅ Expected Service Time: *{finish_time.strftime('%I:%M %p')}*")
+
+    st.write("### 📊 Factors Used")
+    for k, v in factors.items():
+        st.write(f"• *{k}* = {v}")
+
+    # ---------------- DELAY REASONS ----------------
+    st.write("### ❗ Delay Reason Detection")
+    reasons = detect_delay(people, experience, system, peak)
+    if reasons:
+        for r in reasons:
+            st.write(f"- {r}")
     else:
-        return "🔴 Heavy Crowd", "red"
+        st.write("✅ No major delay detected")
 
-def best_visit_time():
-    return "2:30 PM – 4:00 PM" if st.session_state.peak else "Any non-peak hour (Morning/Afternoon)"
+    # ---------------- BEST TIME ----------------
+    st.write("### 🕒 Best Time to Visit")
+    st.info(best_visit_time(peak))
 
-# ---------------- PAGE 1: INPUT + PREDICT ----------------
-if st.session_state.page == 1:
-    st.title("🚦 Smart Queue Waiting Time Predictor")
+    # ---------------- LIVE QUEUE INFO ----------------
+    st.write("### 🔄 Live Queue Status")
+    st.write(f"🙋 Your position in queue: *{people}*")
+    st.write(f"⏳ Approx waiting time remaining: *{wait_time} minutes*")
 
-    with st.container():
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.session_state.queue = st.slider("👥 Total People in Queue", 1, 50, st.session_state.queue)
-        st.session_state.position = st.slider(
-            "🙋 Your Position in Queue", 1, st.session_state.queue, st.session_state.position
+    # ---------------- PDF REPORT ----------------
+    def generate_pdf():
+        file_name = "queue_report.pdf"
+        doc = SimpleDocTemplate(file_name)
+        styles = getSampleStyleSheet()
+        content = []
+
+        content.append(Paragraph("Queue Waiting Time Report", styles["Title"]))
+        content.append(Paragraph(f"Estimated Waiting Time: {wait_time} minutes", styles["Normal"]))
+        content.append(Paragraph(f"Current Time: {now.strftime('%I:%M %p')}", styles["Normal"]))
+        content.append(Paragraph(f"Expected Service Time: {finish_time.strftime('%I:%M %p')}", styles["Normal"]))
+
+        content.append(Paragraph("Factors Used:", styles["Heading2"]))
+        for k, v in factors.items():
+            content.append(Paragraph(f"{k}: {v}", styles["Normal"]))
+
+        content.append(Paragraph("Delay Reasons:", styles["Heading2"]))
+        if reasons:
+            for r in reasons:
+                content.append(Paragraph(r, styles["Normal"]))
+        else:
+            content.append(Paragraph("No major delay detected", styles["Normal"]))
+
+        content.append(Paragraph(f"Best Time to Visit: {best_visit_time(peak)}", styles["Normal"]))
+
+        doc.build(content)
+        return file_name
+
+    pdf_file = generate_pdf()
+
+    with open(pdf_file, "rb") as f:
+        st.download_button(
+            label="📄 Download Report (PDF)",
+            data=f,
+            file_name="Queue_Waiting_Time_Report.pdf",
+            mime="application/pdf"
         )
-        st.session_state.staff = st.slider("👨‍💼 Staff Count", 1, 5, st.session_state.staff)
-        st.session_state.service_time = st.slider("⏱ Service Time (minutes)", 1, 10, st.session_state.service_time)
-        st.session_state.arrival_rate = st.slider("📈 Arrival Rate (people/min)", 0, 3, st.session_state.arrival_rate)
-        st.session_state.experience = st.selectbox("🎓 Staff Experience", ["New", "Average", "Expert"])
-        st.session_state.system = st.selectbox("🖥 System Status", ["Normal", "Slow", "Down"])
-        st.session_state.peak = st.checkbox("🚨 Peak Hour")
-
-        # QR code placeholder
-        st.write("🔹 **QR Code Queue Entry (Optional)**")
-        st.write("Scan this QR to join the queue (simulation).")
-
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    if st.button("🔍 Predict Waiting Time & Next Steps"):
-        st.session_state.wait_time = predict_wait(st.session_state.position)
-        st.session_state.expected_finish = datetime.now() + timedelta(minutes=st.session_state.wait_time)
-        st.session_state.page = 2
-        st.session_state.served = 0
-        st.session_state.running = True
-        st.session_state.completed = False
-        st.rerun()
-
-# ---------------- PAGE 2: LIVE QUEUE ----------------
-elif st.session_state.page == 2:
-    st.title("📊 Live Queue Simulation")
-
-    box = st.empty()
-    bar = st.progress(0)
-
-    step = 0
-    total = st.session_state.position + 1
-
-    while st.session_state.running and st.session_state.position > 0:
-        # Serve people based on staff efficiency
-        served_now = max(1, int(st.session_state.staff * exp_factor(st.session_state.experience)))
-        # Add arriving people
-        arrived = st.session_state.arrival_rate
-        st.session_state.queue = max(0, st.session_state.queue - served_now + arrived)
-        st.session_state.position = max(0, st.session_state.position - served_now)
-        st.session_state.served += served_now
-
-        wait_time = predict_wait(st.session_state.position)
-        mood_txt, color = mood(wait_time)
-        now = datetime.now()
-        finish_time = now + timedelta(minutes=wait_time)
-
-        # Alert system
-        alert_msg = ""
-        if st.session_state.position == 1:
-            alert_msg = "⏰ Your turn is coming soon. Please be ready."
-        elif st.session_state.position == 0:
-            alert_msg = "✅ Your work is completed!"
-            st.session_state.completed = True
-
-        # Display live
-        box.markdown(f"""
-        <div class="card">
-        <h3>⏳ Waiting Time: {wait_time} minutes</h3>
-        <h4 class="{color}">{mood_txt}</h4>
-        👥 People in queue: <b>{st.session_state.queue}</b><br>
-        🙋 Your position: <b>{st.session_state.position}</b><br>
-        ✅ People served: <b>{st.session_state.served}</b><br><br>
-        🕒 Current Time: <b>{now.strftime('%I:%M %p')}</b><br>
-        ⏰ Expected Service Time: <b>{finish_time.strftime('%I:%M %p')}</b><br><br>
-        {f'<div class="alert">{alert_msg}</div>' if alert_msg and not st.session_state.completed else ''}
-        {f'<div class="done">{alert_msg}</div>' if st.session_state.completed else ''}
-        </div>
-        """, unsafe_allow_html=True)
-
-        step += 1
-        bar.progress(min(100, int((step / total) * 100)))
-        time.sleep(1.5)
-
-    st.session_state.running = False
-
-    if st.session_state.completed:
-        bar.progress(100)
-
-    if st.button("💡 Smart Suggestions & Next Page"):
-        st.session_state.page = 3
-        st.rerun()
-
-# ---------------- PAGE 3: SMART SUGGESTIONS ----------------
-elif st.session_state.page == 3:
-    st.title("💡 Smart Suggestions & Extra Features")
-
-    with st.container():
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.write("### ❗ Delay Reasons")
-        if st.session_state.queue > 20:
-            st.write("👥 High number of people")
-        if st.session_state.experience == "New":
-            st.write("🎓 New or less experienced staff")
-        if st.session_state.system != "Normal":
-            st.write("🖥 System performance issue")
-        if st.session_state.peak:
-            st.write("🚨 Peak hour traffic")
-        if st.session_state.arrival_rate > 1:
-            st.write("📈 High arrival rate")
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    # Staff performance & best time
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.write(f"👨‍💼 Staff Performance Score: {st.session_state.staff_score}%")
-    st.write(f"🕒 Best Time to Visit: {best_visit_time()}")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # Peak hour heat map simulation
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.write("📊 Peak Hour Heat Map (Simulated)")
-    peak_hours = ["9 AM", "11 AM", "1 PM", "3 PM", "5 PM"]
-    values = [random.randint(20, 50) for _ in peak_hours]
-    st.bar_chart({"Hours": peak_hours, "Visitors": values})
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # Back button
-    if st.button("🏠 Back to Home"):
-        st.session_state.page = 1
-        st.rerun()
