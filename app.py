@@ -19,7 +19,7 @@ def calculate_waiting_time(people, avg_service, staff, experience, system, peak)
     exp_factor = {"New": 1.2, "Experienced": 1.0, "Expert": 0.85}[experience]
     sys_factor = {"Normal": 1.0, "Slow": 1.3, "Down": 1.6}[system]
     peak_factor = 1.25 if pea…
-[11:38 AM, 1/19/2026] Suji🥰: import streamlit as st
+import streamlit as st
 import numpy as np
 from datetime import datetime, timedelta
 from reportlab.platypus import SimpleDocTemplate, Paragraph
