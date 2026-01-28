@@ -15,7 +15,7 @@ st.markdown("""
 <style>
 body {
     background-color: #f4f9ff;
-    font-family: 'Arial', sans-serif;
+    font-family: Arial, sans-serif;
 }
 .queue-box {
     border: 2px solid #0073e6;
@@ -23,6 +23,8 @@ body {
     border-radius: 10px;
     background-color: #ffffff;
     margin-bottom: 10px;
+    text-align: center;
+    font-size: 20px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -40,13 +42,14 @@ defaults = {
     "wait_time": 0,
     "position": 0,
     "served": 0,
-    "predicted": False
+    "predicted": False,
+    "simulation_started": False
 }
 for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
-# ---------------- ML-LIKE WAIT TIME PREDICTION ----------------
+# ---------------- WAIT TIME PREDICTION ----------------
 def predict_wait(p, s, staff, arr, exp, sys, peak):
     exp_w = {"New": 1.2, "Experienced": 1.0, "Expert": 0.8}[exp]
     sys_w = {"Normal": 1.0, "Slow": 1.3, "Down": 1.6}[sys]
@@ -55,7 +58,6 @@ def predict_wait(p, s, staff, arr, exp, sys, peak):
     arrival_effect = arr * 2
     return round(base * exp_w * sys_w * peak_w + arrival_effect, 1)
 
-# ---------------- QUEUE MOOD ----------------
 def queue_mood(wait):
     if wait <= 15:
         return "🟢 Low Crowd"
@@ -68,9 +70,9 @@ def queue_mood(wait):
 if st.session_state.page == 1:
     st.title("🚦 Smart Queue Predictor & Live Tracker")
 
-    st.session_state.people_ahead = st.slider("👥 People Ahead of You", 0, 50, st.session_state.people_ahead)
+    st.session_state.people_ahead = st.slider("👥 People Ahead", 0, 50, st.session_state.people_ahead)
     st.session_state.staff = st.slider("👨‍💼 Staff Count", 1, 5, st.session_state.staff)
-    st.session_state.service_time = st.slider("⏱ Average Service Time (mins)", 2, 10, st.session_state.service_time)
+    st.session_state.service_time = st.slider("⏱ Service Time (mins)", 2, 10, st.session_state.service_time)
     st.session_state.arrival_rate = st.slider("📈 Arrival Rate (people/min)", 0, 5, st.session_state.arrival_rate)
 
     st.session_state.staff_exp = st.selectbox("🎓 Staff Experience", ["New", "Experienced", "Expert"])
@@ -90,12 +92,13 @@ if st.session_state.page == 1:
         st.session_state.position = st.session_state.people_ahead
         st.session_state.served = 0
         st.session_state.predicted = True
+        st.session_state.simulation_started = False
 
     if st.session_state.predicted:
         end_time = datetime.now() + timedelta(minutes=st.session_state.wait_time)
-        st.success(f"⏳ Estimated Waiting Time: {st.session_state.wait_time} minutes")
-        st.info(f"🕒 Expected Turn Time: {end_time.strftime('%I:%M %p')}")
-        st.write(f"Queue Mood: {queue_mood(st.session_state.wait_time)}")
+        st.success(f"⏳ **Estimated Waiting Time:** {st.session_state.wait_time} minutes")
+        st.info(f"🕒 **Expected Turn Time:** {end_time.strftime('%I:%M %p')}")
+        st.write(f"**Queue Mood:** {queue_mood(st.session_state.wait_time)}")
 
         if st.button("➡️ Start Live Queue"):
             st.session_state.page = 2
@@ -105,70 +108,83 @@ if st.session_state.page == 1:
 elif st.session_state.page == 2:
     st.title("🔄 Live Queue Simulation")
 
-    st.write(f"🙋 **Your Current Position:** {st.session_state.position}")
+    st.write(f"🙋 **Current Position:** {st.session_state.position}")
     st.write(f"✅ **People Served:** {st.session_state.served}")
+
     progress_bar = st.progress(0)
     queue_container = st.empty()
 
-    if st.button("▶️ Start Simulation"):
+    if not st.session_state.simulation_started:
+        if st.button("▶️ Start Simulation (One Time)"):
+            st.session_state.simulation_started = True
+            st.rerun()
+
+    if st.session_state.simulation_started:
         total = st.session_state.position
-        for i in range(total + 1):
-            remaining = total - i
+
+        for i in range(total):
+            remaining = total - i - 1
             st.session_state.position = remaining
             st.session_state.served += 1
 
-            # Progress
-            progress_bar.progress(i / max(1, total))
-            
-            # Digital Twin
+            progress_bar.progress((i + 1) / total)
+
             people_icons = "👤 " * remaining
-            queue_container.markdown(f"<div class='queue-box'>{people_icons}</div>", unsafe_allow_html=True)
+            queue_container.markdown(
+                f"<div class='queue-box'>{people_icons}</div>",
+                unsafe_allow_html=True
+            )
 
-            # Live Join/Leave Prediction
-            if remaining > 12:
-                st.warning(f"⚠️ {random.randint(1,3)} people may leave due to long wait")
+            if remaining > 15:
+                st.warning("⚠️ **High waiting detected – some users may leave**")
             else:
-                st.info("✅ Good time to join queue now")
+                st.info("✅ **Queue moving smoothly**")
 
-            # Crowd Surge Detection
-            if i > 0 and (remaining - (total - i - 1)) >= 2:
-                st.error("🚨 Crowd surge detected! Monitor staff allocation")
-
-            # Auto Staff Trigger
-            if remaining > 20:
-                st.info("🤖 AI triggered: Add extra staff to counters")
-
-            # Explainable AI Message
-            st.write(f"ℹ️ Explainable AI: Queue changed due to arrival/service rate adjustment")
-
-            # Alerts for user turn
             if remaining == 3:
-                st.warning("🔔 Your turn is coming soon!")
-                st.info("🔊 Voice Alert: Your turn is coming in few minutes")
+                st.warning("🔔 **Your turn is coming next!**")
 
             time.sleep(1)
 
-        st.success("🎉 Your service is completed!")
+        st.success("🎉 **Service Completed Successfully!**")
 
-    st.subheader("📱 Scan QR for Live Queue Status")
-    qr_text = f"Position:{st.session_state.position}, Waiting:{st.session_state.wait_time} mins"
-    qr_url = f"https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl={qr_text}"
-    st.image(qr_url)
+    # ✅ WORKING QR CODE
+    st.subheader("📱 Scan for Live Queue Status")
+    qr_data = f"Live Queue | Position: {st.session_state.position} | Wait: {st.session_state.wait_time} mins"
+    st.qr_code(qr_data)
 
-    if st.button("➡️ Smart Suggestions"):
+    if st.button("➡️ Smart Recommendations"):
         st.session_state.page = 3
         st.rerun()
 
-# ================= PAGE 3 : SMART SUGGESTIONS =================
+# ================= PAGE 3 : SMART RECOMMENDATIONS =================
 elif st.session_state.page == 3:
-    st.title("💡 Smart Suggestions")
+    st.title("💡 Smart AI Recommendations")
 
-    st.markdown("### ⭐ Recommended Actions")
-    st.write("1. 🟢 Dynamic Counter Opening: Add staff if queue > 15")
-    st.write("2. 🕒 Best Time to Visit: 4:00 PM – 6:00 PM")
-    st.write("3. ⚠️ Join or Avoid Queue Advice: Join when queue < 12, avoid otherwise")
-    st.write("4. 🔧 Staff Reallocation: Move staff to busy counters")
-    st.write("5. ⭐ Priority Queue Recommendation: For seniors and emergencies")
+    st.markdown("### 🔥 **INTELLIGENT QUEUE ACTIONS**")
+
+    st.image(
+        "https://cdn-icons-png.flaticon.com/512/942/942748.png",
+        width=90
+    )
+    st.markdown("**🟢 Dynamic Counter Scaling**  \nAutomatically open new counters when queue exceeds threshold.")
+
+    st.image(
+        "https://cdn-icons-png.flaticon.com/512/1828/1828884.png",
+        width=90
+    )
+    st.markdown("**⏰ Optimal Visit Prediction**  \nAI suggests low-crowd time slots to users.")
+
+    st.image(
+        "https://cdn-icons-png.flaticon.com/512/595/595067.png",
+        width=90
+    )
+    st.markdown("**🚦 Join / Avoid Guidance**  \nReal-time decision support before entering queue.")
+
+    st.image(
+        "https://cdn-icons-png.flaticon.com/512/1046/1046784.png",
+        width=90
+    )
+    st.markdown("**👴 Priority Queue Allocation**  \nElderly & emergency users handled faster.")
 
     if st.button("➡️ Download Report"):
         st.session_state.page = 4
@@ -186,24 +202,14 @@ People Ahead: {st.session_state.people_ahead}
 Staff Count: {st.session_state.staff}
 Service Time: {st.session_state.service_time} mins
 Arrival Rate: {st.session_state.arrival_rate} people/min
-Staff Experience: {st.session_state.staff_exp}
-System Status: {st.session_state.system_status}
 
 Predicted Waiting Time: {st.session_state.wait_time} minutes
 
-SMART SUGGESTIONS APPLIED:
-- Dynamic counter opening
-- Best time to visit
-- Join or avoid queue advice
-- Staff reallocation
-- Priority queue recommendation
-
-LIVE QUEUE FEATURES APPLIED:
-- Digital twin live queue
-- Live join/leave prediction
-- Crowd surge detection
-- Auto staff trigger
-- Explainable AI message
+AI FEATURES:
+- One-time live simulation
+- Digital queue twin
+- QR-based live tracking
+- Smart AI recommendations
 
 STATUS: Queue completed successfully
 """
