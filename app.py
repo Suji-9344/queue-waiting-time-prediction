@@ -1,127 +1,133 @@
 import streamlit as st
 import time
-import random
 from datetime import datetime, timedelta
-import qrcode
-from PIL import Image
-from io import BytesIO
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+import os
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(
-    page_title="Smart Queue System",
-    page_icon="⏱",
+    page_title="Smart Queue Predictor & Live Tracker",
+    page_icon="🚦",
     layout="centered"
 )
 
-# ---------------- CUSTOM CSS ----------------
-st.markdown("""
-<style>
-.queue-box {
-    border: 2px solid #0073e6;
-    padding: 15px;
-    border-radius: 10px;
-    background-color: #ffffff;
-    margin-bottom: 10px;
-    text-align: center;
-    font-size: 20px;
-}
-</style>
-""", unsafe_allow_html=True)
+# ---------------- TITLE ----------------
+st.title("🚦 Smart Queue Predictor & Live Tracker")
 
-# ---------------- SESSION STATE ----------------
-defaults = {
-    "page": 1,
-    "people_ahead": 10,
-    "staff": 2,
-    "service_time": 5,
-    "arrival_rate": 1,
-    "staff_exp": "Experienced",
-    "system_status": "Normal",
-    "peak": False,
-    "wait_time": 0,
-    "position": 0,
-    "served": 0,
-    "predicted": False,
-    "simulation_started": False
+# ---------------- INPUTS ----------------
+people_ahead = st.slider("👥 People Ahead of You", 0, 50, 9)
+staff_count = st.slider("🧑‍💼 Staff Count", 1, 10, 2)
+avg_service_time = st.slider("⏱ Average Service Time (mins)", 1, 20, 5)
+arrival_rate = st.slider("📈 Arrival Rate (people/min)", 0, 10, 5)
+
+staff_experience = st.selectbox("🎓 Staff Experience", ["New", "Intermediate", "Experienced"])
+system_status = st.selectbox("🖥 System Status", ["Normal", "Slow", "Down"])
+peak_hour = st.checkbox("🚨 Peak Hour")
+
+# ---------------- EXPERIENCE ADJUSTMENT ----------------
+experience_factor = {
+    "New": 1.2,
+    "Intermediate": 1.0,
+    "Experienced": 0.8
 }
 
-for k, v in defaults.items():
-    if k not in st.session_state:
-        st.session_state[k] = v
+status_factor = {
+    "Normal": 1.0,
+    "Slow": 1.3,
+    "Down": 2.0
+}
 
-# ---------------- WAIT TIME PREDICTION ----------------
-def predict_wait(p, s, staff, arr, exp, sys, peak):
-    exp_w = {"New": 1.2, "Experienced": 1.0, "Expert": 0.8}[exp]
-    sys_w = {"Normal": 1.0, "Slow": 1.3, "Down": 1.6}[sys]
-    peak_w = 1.25 if peak else 1.0
-    base = (p * s) / max(1, staff)
-    return round(base * exp_w * sys_w * peak_w + arr * 2, 1)
+# ---------------- PREDICTION ----------------
+if st.button("🔍 Predict Waiting Time"):
+    effective_time = avg_service_time * experience_factor[staff_experience] * status_factor[system_status]
 
-# ================= PAGE 1 =================
-if st.session_state.page == 1:
-    st.title("🚦 Smart Queue Predictor")
+    estimated_wait = (people_ahead / staff_count) * effective_time
+    if peak_hour:
+        estimated_wait *= 1.4
 
-    st.session_state.people_ahead = st.slider("👥 People Ahead", 0, 50, 10)
-    st.session_state.staff = st.slider("👨‍💼 Staff Count", 1, 5, 2)
-    st.session_state.service_time = st.slider("⏱ Service Time (mins)", 2, 10, 5)
-    st.session_state.arrival_rate = st.slider("📈 Arrival Rate", 0, 5, 1)
+    turn_time = datetime.now() + timedelta(minutes=estimated_wait)
 
-    st.session_state.staff_exp = st.selectbox("🎓 Staff Experience", ["New", "Experienced", "Expert"])
-    st.session_state.system_status = st.selectbox("🖥 System Status", ["Normal", "Slow", "Down"])
-    st.session_state.peak = st.checkbox("🚨 Peak Hour")
+    st.success(f"⏳ Estimated Waiting Time: {estimated_wait:.1f} minutes")
+    st.info(f"🕒 Expected Turn Time: {turn_time.strftime('%I:%M %p')}")
 
-    if st.button("🔍 Predict Waiting Time"):
-        st.session_state.wait_time = predict_wait(
-            st.session_state.people_ahead,
-            st.session_state.service_time,
-            st.session_state.staff,
-            st.session_state.arrival_rate,
-            st.session_state.staff_exp,
-            st.session_state.system_status,
-            st.session_state.peak
+    if estimated_wait < 30:
+        st.success("🟢 Queue Mood: Light Crowd")
+    elif estimated_wait < 60:
+        st.warning("🟠 Queue Mood: Moderate Crowd")
+    else:
+        st.error("🔴 Queue Mood: Heavy Crowd")
+
+# ---------------- LIVE QUEUE ----------------
+st.markdown("---")
+st.subheader("📍 Live Queue Status")
+
+st.write(f"👤 Your Current Position: {people_ahead}")
+st.write("✅ People Served: 0")
+
+progress = st.progress(0)
+icons = "👤 " * min(people_ahead, 10)
+st.markdown(f"### {icons}")
+
+if st.button("▶ Start Simulation"):
+    served = 0
+    for i in range(people_ahead):
+        time.sleep(0.3)
+        served += 1
+        progress.progress(int((served / people_ahead) * 100))
+    st.success("✅ Queue Updated Successfully")
+
+st.info("ℹ Explainable AI: Queue changed due to arrival/service rate adjustment")
+st.success("✅ Good time to join queue now")
+
+# ---------------- RECOMMENDED ACTIONS ----------------
+st.markdown("---")
+st.header("⭐ Recommended Actions")
+
+recommendations = [
+    "🟢 Dynamic Counter Opening: Add staff if queue > 15",
+    "🕓 Best Time to Visit: 4:00 PM – 6:00 PM",
+    "⚠ Join when queue < 12, avoid otherwise",
+    "🔧 Staff Reallocation: Move staff to busy counters",
+    "⭐ Priority Queue for seniors & emergencies"
+]
+
+for r in recommendations:
+    st.write(r)
+
+# ---------------- PDF REPORT ----------------
+def generate_pdf():
+    file_path = "Queue_Report.pdf"
+    c = canvas.Canvas(file_path, pagesize=A4)
+    text = c.beginText(40, 800)
+
+    text.setFont("Helvetica", 11)
+    text.textLine("Smart Queue Predictor Report")
+    text.textLine("-----------------------------")
+    text.textLine(f"People Ahead: {people_ahead}")
+    text.textLine(f"Staff Count: {staff_count}")
+    text.textLine(f"Average Service Time: {avg_service_time} mins")
+    text.textLine(f"Arrival Rate: {arrival_rate} people/min")
+    text.textLine(f"Staff Experience: {staff_experience}")
+    text.textLine(f"System Status: {system_status}")
+    text.textLine(f"Peak Hour: {'Yes' if peak_hour else 'No'}")
+    text.textLine("")
+    text.textLine("Generated on: " + datetime.now().strftime("%d-%m-%Y %I:%M %p"))
+
+    c.drawText(text)
+    c.showPage()
+    c.save()
+    return file_path
+
+# ---------------- DOWNLOAD BUTTON ----------------
+st.markdown("---")
+if st.button("⬇ Download Report"):
+    pdf_file=generate_pdf()
+    with open(pdf_file, "rb") as f:
+        st.download_button(
+            label="📄 Download Queue Report (PDF)",
+            data=f,
+            file_name="Smart_Queue_Report.pdf",
+            mime="application/pdf"
         )
-        st.session_state.position = st.session_state.people_ahead
-        st.session_state.served = 0
-        st.session_state.predicted = True
-        st.session_state.simulation_started = False
-
-    if st.session_state.predicted:
-        end_time = datetime.now() + timedelta(minutes=st.session_state.wait_time)
-        st.success(f"⏳ Waiting Time: {st.session_state.wait_time} mins")
-        st.info(f"🕒 Expected Turn: {end_time.strftime('%I:%M %p')}")
-
-        if st.button("➡️ Start Live Queue"):
-            st.session_state.page = 2
-            st.rerun()
-
-# ================= PAGE 2 =================
-elif st.session_state.page == 2:
-    st.title("🔄 Live Queue Simulation")
-
-    st.write(f"🙋 Position: {st.session_state.position}")
-    st.write(f"✅ Served: {st.session_state.served}")
-
-    progress = st.progress(0)
-    box = st.empty()
-
-    if not st.session_state.simulation_started:
-        if st.button("▶️ Start Simulation (One Time)"):
-            st.session_state.simulation_started = True
-            st.rerun()
-
-    if st.session_state.simulation_started:
-        total = st.session_state.position
-
-        for i in range(total):
-            remaining = total - i - 1
-            st.session_state.position = remaining
-            st.session_state.served += 1
-
-            progress.progress((i + 1) / total)
-            box.markdown(
-                f"<div class='queue-box'>{'👤 ' * remaining}</div>",
-                unsafe_allow_html=True
-            )
-
-            if remaining == 3:
-                st.warning("🔔 Your turn is next!")
+    
