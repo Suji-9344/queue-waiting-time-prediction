@@ -96,9 +96,9 @@ if st.session_state.page == 1:
 
     if st.session_state.predicted:
         end_time = datetime.now() + timedelta(minutes=st.session_state.wait_time)
-        st.success(f"⏳ **Estimated Waiting Time:** {st.session_state.wait_time} minutes")
-        st.info(f"🕒 **Expected Turn Time:** {end_time.strftime('%I:%M %p')}")
-        st.write(f"**Queue Mood:** {queue_mood(st.session_state.wait_time)}")
+        st.success(f"⏳ *Estimated Waiting Time:* {st.session_state.wait_time} minutes")
+        st.info(f"🕒 *Expected Turn Time:* {end_time.strftime('%I:%M %p')}")
+        st.write(f"*Queue Mood:* {queue_mood(st.session_state.wait_time)}")
 
         if st.button("➡️ Start Live Queue"):
             st.session_state.page = 2
@@ -108,8 +108,8 @@ if st.session_state.page == 1:
 elif st.session_state.page == 2:
     st.title("🔄 Live Queue Simulation")
 
-    st.write(f"🙋 **Current Position:** {st.session_state.position}")
-    st.write(f"✅ **People Served:** {st.session_state.served}")
+    st.write(f"🙋 *Current Position:* {st.session_state.position}")
+    st.write(f"✅ *People Served:* {st.session_state.served}")
 
     progress_bar = st.progress(0)
     queue_container = st.empty()
@@ -136,16 +136,16 @@ elif st.session_state.page == 2:
             )
 
             if remaining > 15:
-                st.warning("⚠️ **High waiting detected – some users may leave**")
+                st.warning("⚠️ *High waiting detected – some users may leave*")
             else:
-                st.info("✅ **Queue moving smoothly**")
+                st.info("✅ *Queue moving smoothly*")
 
             if remaining == 3:
-                st.warning("🔔 **Your turn is coming next!**")
+                st.warning("🔔 *Your turn is coming next!*")
 
             time.sleep(1)
 
-        st.success("🎉 **Service Completed Successfully!**")
+        st.success("🎉 *Service Completed Successfully!*")
 
     # ✅ WORKING QR CODE
     st.subheader("📱 Scan for Live Queue Status")
@@ -160,31 +160,31 @@ elif st.session_state.page == 2:
 elif st.session_state.page == 3:
     st.title("💡 Smart AI Recommendations")
 
-    st.markdown("### 🔥 **INTELLIGENT QUEUE ACTIONS**")
+    st.markdown("### 🔥 *INTELLIGENT QUEUE ACTIONS*")
 
     st.image(
         "https://cdn-icons-png.flaticon.com/512/942/942748.png",
         width=90
     )
-    st.markdown("**🟢 Dynamic Counter Scaling**  \nAutomatically open new counters when queue exceeds threshold.")
+    st.markdown("*🟢 Dynamic Counter Scaling*  \nAutomatically open new counters when queue exceeds threshold.")
 
     st.image(
         "https://cdn-icons-png.flaticon.com/512/1828/1828884.png",
         width=90
     )
-    st.markdown("**⏰ Optimal Visit Prediction**  \nAI suggests low-crowd time slots to users.")
+    st.markdown("*⏰ Optimal Visit Prediction*  \nAI suggests low-crowd time slots to users.")
 
     st.image(
         "https://cdn-icons-png.flaticon.com/512/595/595067.png",
         width=90
     )
-    st.markdown("**🚦 Join / Avoid Guidance**  \nReal-time decision support before entering queue.")
+    st.markdown("*🚦 Join / Avoid Guidance*  \nReal-time decision support before entering queue.")
 
     st.image(
         "https://cdn-icons-png.flaticon.com/512/1046/1046784.png",
         width=90
     )
-    st.markdown("**👴 Priority Queue Allocation**  \nElderly & emergency users handled faster.")
+    st.markdown("*👴 Priority Queue Allocation*  \nElderly & emergency users handled faster.")
 
     if st.button("➡️ Download Report"):
         st.session_state.page = 4
@@ -218,4 +218,4 @@ STATUS: Queue completed successfully
 
     if st.button("🏠 Back to Home"):
         st.session_state.page = 1
-        st.rerun()
+        st.rerun() 
