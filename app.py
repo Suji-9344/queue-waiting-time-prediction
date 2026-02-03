@@ -129,9 +129,9 @@ if st.session_state.page == 1:
 
     if st.session_state.predicted:
         current_time = datetime.now()
-        end_time = current_time + timedelta(minutes=st.session_state.wait_time)
+        expected_turn_time = current_time + timedelta(minutes=st.session_state.wait_time)
         st.markdown(f"<div class='container-box'>⏳ <b>Estimated Waiting Time:</b> {st.session_state.wait_time} minutes</div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='container-box'>🕒 <b>Expected Turn Time:</b> {end_time.strftime('%I:%M %p')}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='container-box'>🕒 <b>Expected Turn Time:</b> {expected_turn_time.strftime('%I:%M %p')}</div>", unsafe_allow_html=True)
         st.markdown(f"<div class='container-box'>Queue Mood: {queue_mood(st.session_state.wait_time)}</div>", unsafe_allow_html=True)
         st.markdown(f"<div class='container-box'>Staff Efficiency: {staff_efficiency(st.session_state.staff, st.session_state.service_time)}%</div>", unsafe_allow_html=True)
         
@@ -155,28 +155,22 @@ elif st.session_state.page == 2:
             st.session_state.position = remaining
             st.session_state.served += 1
 
-            # Progress
             progress_bar.progress(i / max(1, total))
 
-            # Digital Twin
             people_icons = "👤 " * remaining
             queue_container.markdown(f"<div class='queue-box'>{people_icons}</div>", unsafe_allow_html=True)
 
-            # Live Join/Leave Prediction
             if remaining > 12:
                 st.warning(f"⚠️ {random.randint(1,3)} people may leave due to long wait")
             else:
                 st.info("✅ Good time to join queue now")
 
-            # Crowd Surge Detection
             if i > 0 and (remaining - (total - i - 1)) >= 2:
                 st.error("🚨 Crowd surge detected! Monitor staff allocation")
 
-            # Auto Staff Trigger
             if remaining > 20:
                 st.info("🤖 AI triggered: Add extra staff to counters")
 
-            # Alerts for user turn
             if remaining == 3:
                 st.warning("🔔 Your turn is coming soon!")
                 st.info("🔊 Voice Alert: Your turn is coming in few minutes")
@@ -185,12 +179,16 @@ elif st.session_state.page == 2:
 
         st.success("🎉 Your service is completed!")
 
-    st.subheader("📱 Scan QR for Live Queue Status")
+    st.subheader("📱 QR Code for Live Queue Status")
     qr_data = f"Position:{st.session_state.position}, Waiting:{st.session_state.wait_time} mins"
     qr_img = generate_qr(qr_data)
     st.image(qr_img)
 
-    if st.button("➡️ Smart Suggestions"):
+    col1, col2 = st.columns(2)
+    if col1.button("⬅️ Back to Home"):
+        st.session_state.page = 1
+        st.rerun()
+    if col2.button("➡️ Smart Suggestions"):
         st.session_state.page = 3
         st.rerun()
 
@@ -209,7 +207,11 @@ elif st.session_state.page == 3:
 </div>
 """, unsafe_allow_html=True)
 
-    if st.button("➡️ Download Report"):
+    col1, col2 = st.columns(2)
+    if col1.button("⬅️ Back to Live Queue"):
+        st.session_state.page = 2
+        st.rerun()
+    if col2.button("➡️ Download Report"):
         st.session_state.page = 4
         st.rerun()
 
@@ -217,6 +219,7 @@ elif st.session_state.page == 3:
 elif st.session_state.page == 4:
     st.markdown("<h1 style='color:#00ffcc;text-align:center;'>📄 Queue Report</h1>", unsafe_allow_html=True)
 
+    expected_turn_time = datetime.now() + timedelta(minutes=st.session_state.wait_time)
     report = f"""
 SMART QUEUE MANAGEMENT REPORT
 ----------------------------
@@ -229,7 +232,7 @@ Staff Experience: {st.session_state.staff_exp}
 System Status: {st.session_state.system_status}
 
 Predicted Waiting Time: {st.session_state.wait_time} minutes
-Expected Turn Time: {(datetime.now() + timedelta(minutes=st.session_state.wait_time)).strftime('%I:%M %p')}
+Expected Turn Time: {expected_turn_time.strftime('%I:%M %p')}
 
 SMART SUGGESTIONS APPLIED:
 - Dynamic counter opening
