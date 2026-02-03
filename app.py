@@ -1,5 +1,7 @@
 import streamlit as st
-import time
+from datetime import datetime, timedelta
+import qrcode
+from io import BytesIO
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(
@@ -8,177 +10,147 @@ st.set_page_config(
     layout="wide"
 )
 
-# ---------------- CSS ----------------
+# ---------------- CUSTOM CSS ----------------
 st.markdown("""
 <style>
-
-/* Background */
-.stApp {
-    background: linear-gradient(135deg, #2563eb, #f97316);
-    font-family: 'Segoe UI', sans-serif;
+body {
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
 }
 
-/* Header */
-.header {
-    background: linear-gradient(90deg, #1e3a8a, #2563eb);
-    padding: 18px;
-    border-radius: 20px;
-    color: #fde68a;
-    text-align: center;
-    font-size: 34px;
+.main-title {
+    font-size: 36px;
     font-weight: 800;
-    margin-bottom: 25px;
-}
-
-/* Tabs */
-.stTabs [data-baseweb="tab"] {
-    font-size: 16px;
-    font-weight: 700;
-    color: #1e3a8a;
-}
-
-/* Cards */
-.card {
-    background: rgba(255,255,255,0.95);
-    padding: 20px;
-    border-radius: 20px;
-    box-shadow: 0px 8px 18px rgba(0,0,0,0.25);
-    margin-bottom: 20px;
-}
-
-/* Alert Card */
-.alert {
-    background: linear-gradient(135deg, #fee2e2, #fecaca);
-    padding: 18px;
-    border-radius: 18px;
-    font-weight: 700;
-}
-
-/* Notification Card */
-.notify {
-    background: linear-gradient(135deg, #ede9fe, #ddd6fe);
-    padding: 18px;
-    border-radius: 18px;
-    font-weight: 700;
-}
-
-/* Queue */
-.queue-box {
-    border: 3px dashed #2563eb;
-    padding: 15px;
-    border-radius: 20px;
-    background: #eff6ff;
-    font-size: 22px;
+    color: #FFD700;
     text-align: center;
 }
 
-/* Buttons */
-.stButton > button {
-    background: linear-gradient(90deg, #2563eb, #1e40af);
-    color: white;
+.card {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    padding: 20px;
     border-radius: 15px;
-    font-size: 16px;
-    padding: 10px 22px;
-    border: none;
+    color: white;
+    box-shadow: 0px 4px 15px rgba(0,0,0,0.3);
 }
 
+.highlight {
+    color: #00FFD1;
+    font-weight: bold;
+}
+
+.alert-card {
+    background: linear-gradient(135deg, #ff512f, #dd2476);
+    padding: 20px;
+    border-radius: 15px;
+    color: white;
+    font-weight: bold;
+}
+
+.success-card {
+    background: linear-gradient(135deg, #11998e, #38ef7d);
+    padding: 20px;
+    border-radius: 15px;
+    color: white;
+    font-weight: bold;
+}
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- HEADER ----------------
-st.markdown(
-    "<div class='header'>🚦 SMART QUEUE MANAGEMENT SYSTEM</div>",
-    unsafe_allow_html=True
-)
+# ---------------- TITLE ----------------
+st.markdown('<div class="main-title">SMART QUEUE MANAGEMENT SYSTEM</div>', unsafe_allow_html=True)
+st.write("")
 
 # ---------------- TABS ----------------
-tab1, tab2, tab3, tab4 = st.tabs(
-    ["Predictor", "Live Queue", "Suggestions", "Priority & Alerts"]
-)
+tab1, tab2, tab3, tab4 = st.tabs([
+    "⏳ Predict Waiting Time",
+    "📱 Live Queue QR",
+    "💡 Suggestions",
+    "🚨 Priority & Alerts"
+])
 
-# ================= TAB 1 =================
+# ==================================================
+# TAB 1 – WAIT TIME PREDICTION
+# ==================================================
 with tab1:
-    col1, col2 = st.columns([1, 2])
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+
+    st.subheader("Enter Queue Details")
+
+    people_ahead = st.number_input("People Ahead", min_value=0, value=10)
+    service_time = st.number_input("Service Time per Person (minutes)", min_value=1, value=5)
+
+    if st.button("Predict Waiting Time"):
+        waiting_minutes = people_ahead * service_time
+        current_time = datetime.now()
+        expected_time = current_time + timedelta(minutes=waiting_minutes)
+
+        st.markdown(f"""
+        <p class="highlight">Estimated Waiting Time: {waiting_minutes} minutes</p>
+        <p class="highlight">Expected Turn Time: {expected_time.strftime("%I:%M %p")}</p>
+        """, unsafe_allow_html=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# ==================================================
+# TAB 2 – LIVE QR CODE
+# ==================================================
+with tab2:
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+
+    st.subheader("Live Queue Status QR Code")
+
+    qr_data = "Live Queue Status: ACTIVE | People in Queue"
+    qr = qrcode.make(qr_data)
+
+    buffer = BytesIO()
+    qr.save(buffer)
+    st.image(buffer.getvalue(), width=250)
+
+    st.success("Scan this QR code to view live queue status")
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# ==================================================
+# TAB 3 – SUGGESTIONS
+# ==================================================
+with tab3:
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+
+    st.subheader("Smart Suggestions")
+
+    col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.subheader("⏱ Wait Time Estimator")
-
-        st.write("**People Ahead:** 12")
-        st.write("**Staff Count:** 3")
-        st.write("**Service Time:** 6 mins")
-        st.write("**Arrival Rate:** 2 / min")
-
-        st.success("Estimated Wait Time: **18 mins**")
-        st.info("Queue Mood: 🟡 Medium Crowd")
-
-        st.button("▶ Start Live Queue")
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.image("suggestion1.png", use_container_width=True)
+        st.markdown("✔ Visit during **non-peak hours**")
 
     with col2:
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.subheader("📊 Live Queue Tracker")
+        st.image("suggestion2.png", use_container_width=True)
+        st.markdown("✔ Use **QR check-in** to save time")
 
-        st.markdown("### **NOW SERVING A-23**")
-        st.write("Approx Wait: **5 mins**")
-        st.progress(0.6)
+    st.info("AI suggests visiting early morning or late afternoon for faster service")
 
-        st.markdown("<div class='queue-box'>👤 👤 👤 👤 👤 👤 👤</div>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# ================= TAB 2 =================
-with tab2:
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.subheader("🔄 Live Queue Simulation")
-
-    queue_area = st.empty()
-    progress = st.progress(0)
-
-    if st.button("▶ Start Simulation"):
-        total = 12
-        for i in range(total + 1):
-            remain = total - i
-            progress.progress(i / total)
-            queue_area.markdown(
-                f"<div class='queue-box'>{'👤 ' * remain}</div>",
-                unsafe_allow_html=True
-            )
-            time.sleep(0.4)
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# ================= TAB 3 =================
-with tab3:
-    st.markdown("<div class='alert'>", unsafe_allow_html=True)
-    st.subheader("🚨 Crowd Surge Alert!")
-    st.write("⚠ Heavy crowd incoming. Surge expected soon.")
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    st.markdown("<div class='notify'>", unsafe_allow_html=True)
-    st.subheader("🔔 Smart Notifications")
-    st.write("🔔 Your turn in **3 minutes**")
-    st.write("📢 Get ready for service!")
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# ================= TAB 4 =================
+# ==================================================
+# TAB 4 – PRIORITY & ALERTS
+# ==================================================
 with tab4:
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.subheader("♿ Priority Queue System")
+    st.markdown('<div class="alert-card">', unsafe_allow_html=True)
 
-    st.write("✔ Senior citizens")
-    st.write("✔ Pregnant women")
-    st.write("✔ Emergency cases")
+    st.subheader("🚨 Crowd Alerts")
+    st.image("alert.png", width=120)
+    st.write("⚠ Heavy Crowd Incoming!")
+    st.write("⚠ Delay Expected")
 
-    st.success("Fast-track service enabled for priority users")
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.write("")
 
-# ================= IMAGE SECTION =================
-st.markdown("## 🎨 UI Design Preview")
-st.image("dashboard_ui.png", use_container_width=True)
+    st.markdown('<div class="success-card">', unsafe_allow_html=True)
 
-# ---------------- FOOTER ----------------
-st.markdown("""
-<div style="text-align:center;color:white;margin-top:30px;font-weight:600;">
-Ethical AI | Smart Alerts | Digital Queue | Decision Support
-</div>
-""", unsafe_allow_html=True)
+    st.subheader("⭐ Priority Queue")
+    st.image("priority.png", width=120)
+    st.write("✔ Senior Citizens")
+    st.write("✔ Emergency Patients")
+    st.write("✔ Disabled Access")
+
+    st.markdown('</div>', unsafe_allow_html=True)
