@@ -74,7 +74,6 @@ tab1, tab2, tab3, tab4 = st.tabs([
 # ==================================================
 with tab1:
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("Queue Input Details")
 
     people_ahead = st.number_input(
         "Number of People Ahead",
@@ -89,27 +88,24 @@ with tab1:
     )
 
     if st.button("Predict Waiting Time"):
-        waiting_minutes = people_ahead * service_time
+        wait_minutes = people_ahead * service_time
         current_time = datetime.now()
-        expected_time = current_time + timedelta(minutes=waiting_minutes)
+        expected_time = current_time + timedelta(minutes=wait_minutes)
 
         st.markdown(f"""
-        <p class="highlight">Estimated Waiting Time: {waiting_minutes} minutes</p>
-        <p class="highlight">
-        Expected Turn Time: {expected_time.strftime("%I:%M %p")}
-        </p>
+        <p class="highlight">Estimated Waiting Time: {wait_minutes} minutes</p>
+        <p class="highlight">Expected Turn Time: {expected_time.strftime("%I:%M %p")}</p>
         """, unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ==================================================
-# TAB 2 – LIVE QR CODE
+# TAB 2 – LIVE QR CODE (NO qrcode MODULE)
 # ==================================================
 with tab2:
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("Live Queue Status")
 
-    qr_data = "Live Queue Active | Status: Normal | Smart Queue System"
+    qr_data = "Live Queue Active | Smart Queue Management System"
     st.qr_code(qr_data)
 
     st.success("Scan this QR code to check live queue status")
@@ -120,22 +116,18 @@ with tab2:
 # ==================================================
 with tab3:
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("Smart Queue Suggestions")
 
     col1, col2 = st.columns(2)
 
     with col1:
         st.image("suggestion1.png", use_container_width=True)
-        st.markdown("✔ **Visit during non-peak hours**")
+        st.write("✔ Visit during non-peak hours")
 
     with col2:
         st.image("suggestion2.png", use_container_width=True)
-        st.markdown("✔ **Use QR check-in to save time**")
+        st.write("✔ Use QR check-in to save time")
 
-    st.info(
-        "AI Tip: Early morning and late afternoon usually have shorter queues."
-    )
-
+    st.info("AI Tip: Morning and late afternoon have shorter queues")
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ==================================================
@@ -143,8 +135,7 @@ with tab3:
 # ==================================================
 with tab4:
     st.markdown('<div class="alert-card">', unsafe_allow_html=True)
-    st.subheader("🚨 Crowd Alerts")
-    st.image("alert.png", width=160)
+    st.image("alert.png", width=150)
     st.write("⚠ Heavy crowd incoming")
     st.write("⚠ Delay expected")
     st.markdown('</div>', unsafe_allow_html=True)
@@ -152,9 +143,8 @@ with tab4:
     st.write("")
 
     st.markdown('<div class="success-card">', unsafe_allow_html=True)
-    st.subheader("⭐ Priority Queue")
-    st.image("priority.png", width=160)
+    st.image("priority.png", width=150)
     st.write("✔ Senior Citizens")
     st.write("✔ Emergency Cases")
-    st.write("✔ Differently Abled Persons")
+    st.write("✔ Disabled Access")
     st.markdown('</div>', unsafe_allow_html=True)
