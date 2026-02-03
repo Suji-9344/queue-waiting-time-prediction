@@ -1,0 +1,40 @@
+from PIL import Image, ImageDraw, ImageFont
+
+# Create canvas
+width, height = 1400, 800
+img = Image.new("RGB", (width, height), "#f4f9ff")
+draw = ImageDraw.Draw(img)
+
+# Try loading default font
+try:
+    font_title = ImageFont.truetype("DejaVuSans-Bold.ttf", 50)
+    font_card = ImageFont.truetype("DejaVuSans-Bold.ttf", 28)
+    font_text = ImageFont.truetype("DejaVuSans.ttf", 22)
+except:
+    font_title = font_card = font_text = ImageFont.load_default()
+
+# Title
+draw.text((420, 30), "Smart Queue Management Dashboard", fill="#1f2937", font=font_title)
+
+# Card function
+def draw_card(x, y, w, h, color, title, value):
+    draw.rounded_rectangle((x, y, x+w, y+h), radius=25, fill=color)
+    draw.text((x+20, y+20), title, fill="white", font=font_card)
+    draw.text((x+20, y+70), value, fill="white", font=font_text)
+
+# Cards
+draw_card(100, 140, 360, 150, "#6366F1", "⏱ Avg Wait Time", "12 minutes")
+draw_card(520, 140, 360, 150, "#10B981", "👥 People in Queue", "18")
+draw_card(940, 140, 360, 150, "#F59E0B", "🚨 Crowd Status", "Normal")
+
+draw_card(100, 340, 360, 150, "#EF4444", "⚠ Surge Alert", "Low Risk")
+draw_card(520, 340, 360, 150, "#0EA5E9", "🔔 Next Turn", "User ID: 24")
+draw_card(940, 340, 360, 150, "#8B5CF6", "♿ Priority Queue", "Enabled")
+
+# Footer
+draw.text((520, 700), "AI Powered • Live Queue • Smart Alerts", fill="#374151", font=font_text)
+
+# Save image
+img.save("dashboard_ui.png")
+
+print("dashboard_ui.png created successfully ✅")
