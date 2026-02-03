@@ -3,9 +3,14 @@ from datetime import datetime, timedelta
 import qrcode
 from io import BytesIO
 
-st.set_page_config(page_title="Smart Queue Management System", page_icon="⏱", layout="wide")
+# ---------------- PAGE CONFIG ----------------
+st.set_page_config(
+    page_title="Smart Queue Management System",
+    page_icon="⏱",
+    layout="wide"
+)
 
-# ---------- CSS ----------
+# ---------------- CUSTOM CSS ----------------
 st.markdown("""
 <style>
 body { background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);}
@@ -19,7 +24,13 @@ body { background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);}
 
 st.markdown('<div class="main-title">SMART QUEUE MANAGEMENT SYSTEM</div>', unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4 = st.tabs(["⏳ Predict Waiting Time","📱 Live Queue QR","💡 Suggestions","🚨 Priority & Alerts"])
+# ---------------- TABS ----------------
+tab1, tab2, tab3, tab4 = st.tabs([
+    "⏳ Predict Waiting Time",
+    "📱 Live Queue QR",
+    "💡 Suggestions",
+    "🚨 Priority & Alerts"
+])
 
 # ---------------- TAB 1 ----------------
 with tab1:
@@ -40,11 +51,17 @@ with tab1:
 with tab2:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.subheader("Live Queue Status QR Code")
+
+    # 1️⃣ Display App Image (example: 'app_logo.png')
+    st.image("priority.png", width=200)  # Replace with your app image file if needed
+
+    # 2️⃣ Generate QR code
     qr_data = "Live Queue Active | Smart Queue System | People Ahead: 10"
     qr_img = qrcode.make(qr_data)
     buffer = BytesIO()
     qr_img.save(buffer, format="PNG")
     st.image(buffer.getvalue(), width=200)
+
     st.success("Scan this QR code to check live queue status")
     st.markdown('</div>', unsafe_allow_html=True)
 
