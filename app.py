@@ -2,6 +2,8 @@ import streamlit as st
 import time
 import random
 from datetime import datetime, timedelta
+import pyqrcode
+from io import BytesIO
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(
@@ -14,7 +16,7 @@ st.set_page_config(
 st.markdown("""
 <style>
 body {
-    background-color: #1c1c1c;
+    background-color: #0d1b2a;
     color: #ffffff;
     font-family: 'Arial', sans-serif;
 }
@@ -25,18 +27,23 @@ h1, h2, h3, h4, h5, h6, .stButton button {
     border: 2px solid #00ffcc;
     padding: 15px;
     border-radius: 12px;
-    background-color: #333333;
+    background-color: #1b263b;
     margin-bottom: 10px;
     color: #ffffff;
     font-weight: bold;
     text-align: center;
 }
-.progress-bar {
-    color: #ffffff;
-    font-weight: bold;
+.progress-bar > div {
+    background-color: #00ffcc !important;
 }
 .header-img {
     width: 100%;
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+.container-box {
+    background-color: #1b263b;
+    padding: 15px;
     border-radius: 12px;
     margin-bottom: 20px;
 }
@@ -85,10 +92,17 @@ def staff_efficiency(staff_count, service_time):
     efficiency = min(100, (staff_count * 10) / service_time * 10)
     return round(efficiency, 1)
 
-# ================= PAGE 1 : INPUT =================
+# ---------------- GENERATE QR ----------------
+def generate_qr(data):
+    qr = pyqrcode.create(data)
+    buffer = BytesIO()
+    qr.png(buffer, scale=5, module_color=[0, 255, 204, 255], background=[27,38,59,255])
+    buffer.seek(0)
+    return buffer
+
+# ================= PAGE 1 : HOME =================
 if st.session_state.page == 1:
-    st.image("https://images.unsplash.com/photo-1581091012184-3e3b68aa0d2e?auto=format&fit=crop&w=1200&q=80", use_column_width=True, output_format="PNG")
-    st.title("🚦 Smart Queue Predictor & Live Tracker")
+    st.markdown("<h1 style='color:#00ffcc;text-align:center;'>🚦 Smart Queue Predictor & Live Tracker</h1>", unsafe_allow_html=True)
 
     st.session_state.people_ahead = st.slider("👥 People Ahead of You", 0, 50, st.session_state.people_ahead)
     st.session_state.staff = st.slider("👨‍💼 Staff Count", 1, 5, st.session_state.staff)
@@ -116,10 +130,10 @@ if st.session_state.page == 1:
     if st.session_state.predicted:
         current_time = datetime.now()
         end_time = current_time + timedelta(minutes=st.session_state.wait_time)
-        st.success(f"⏳ Estimated Waiting Time: {st.session_state.wait_time} minutes")
-        st.info(f"🕒 Expected Turn Time: {end_time.strftime('%I:%M %p')}")
-        st.write(f"Queue Mood: {queue_mood(st.session_state.wait_time)}")
-        st.write(f"Staff Efficiency: {staff_efficiency(st.session_state.staff, st.session_state.service_time)}%")
+        st.markdown(f"<div class='container-box'>⏳ <b>Estimated Waiting Time:</b> {st.session_state.wait_time} minutes</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='container-box'>🕒 <b>Expected Turn Time:</b> {end_time.strftime('%I:%M %p')}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='container-box'>Queue Mood: {queue_mood(st.session_state.wait_time)}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='container-box'>Staff Efficiency: {staff_efficiency(st.session_state.staff, st.session_state.service_time)}%</div>", unsafe_allow_html=True)
         
         if st.button("➡️ Start Live Queue"):
             st.session_state.page = 2
@@ -127,10 +141,10 @@ if st.session_state.page == 1:
 
 # ================= PAGE 2 : LIVE QUEUE =================
 elif st.session_state.page == 2:
-    st.title("🔄 Live Queue Simulation")
+    st.markdown("<h1 style='color:#00ffcc;text-align:center;'>🔄 Live Queue Simulation</h1>", unsafe_allow_html=True)
 
-    st.write(f"🙋 Your Current Position: {st.session_state.position}")
-    st.write(f"✅ People Served: {st.session_state.served}")
+    st.markdown(f"<div class='container-box'>🙋 Your Current Position: {st.session_state.position}</div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='container-box'>✅ People Served: {st.session_state.served}</div>", unsafe_allow_html=True)
     progress_bar = st.progress(0)
     queue_container = st.empty()
 
@@ -172,9 +186,9 @@ elif st.session_state.page == 2:
         st.success("🎉 Your service is completed!")
 
     st.subheader("📱 Scan QR for Live Queue Status")
-    qr_text = f"Position:{st.session_state.position}, Waiting:{st.session_state.wait_time} mins"
-    qr_url = f"https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl={qr_text}"
-    st.image(qr_url)
+    qr_data = f"Position:{st.session_state.position}, Waiting:{st.session_state.wait_time} mins"
+    qr_img = generate_qr(qr_data)
+    st.image(qr_img)
 
     if st.button("➡️ Smart Suggestions"):
         st.session_state.page = 3
@@ -182,15 +196,18 @@ elif st.session_state.page == 2:
 
 # ================= PAGE 3 : SMART SUGGESTIONS =================
 elif st.session_state.page == 3:
-    st.title("💡 Smart Suggestions")
+    st.markdown("<h1 style='color:#00ffcc;text-align:center;'>💡 Smart Suggestions</h1>", unsafe_allow_html=True)
 
-    st.markdown("### ⭐ Recommended Actions")
-    st.write("1. 🟢 Dynamic Counter Opening: Add staff if queue > 15")
-    st.write("2. 🕒 Best Time to Visit: 4:00 PM – 6:00 PM")
-    st.write("3. ⚠️ Join or Avoid Queue Advice: Join when queue < 12, avoid otherwise")
-    st.write("4. 🔧 Staff Reallocation: Move staff to busy counters")
-    st.write("5. ⭐ Priority Queue Recommendation: For seniors and emergencies")
-    st.write("6. 📊 Live Crowd Percentage: Monitor real-time queue status")
+    st.markdown("""
+<div class='container-box'>
+1. 🟢 Dynamic Counter Opening: Add staff if queue > 15<br>
+2. 🕒 Best Time to Visit: 4:00 PM – 6:00 PM<br>
+3. ⚠️ Join or Avoid Queue Advice: Join when queue < 12, avoid otherwise<br>
+4. 🔧 Staff Reallocation: Move staff to busy counters<br>
+5. ⭐ Priority Queue Recommendation: For seniors and emergencies<br>
+6. 📊 Live Crowd Percentage: Monitor real-time queue status
+</div>
+""", unsafe_allow_html=True)
 
     if st.button("➡️ Download Report"):
         st.session_state.page = 4
@@ -198,7 +215,7 @@ elif st.session_state.page == 3:
 
 # ================= PAGE 4 : REPORT =================
 elif st.session_state.page == 4:
-    st.title("📄 Queue Report")
+    st.markdown("<h1 style='color:#00ffcc;text-align:center;'>📄 Queue Report</h1>", unsafe_allow_html=True)
 
     report = f"""
 SMART QUEUE MANAGEMENT REPORT
@@ -231,7 +248,7 @@ LIVE QUEUE FEATURES APPLIED:
 
 STATUS: Queue completed successfully
 """
-    st.download_button("📥 Download Report", report, file_name="queue_report.txt")
+    st.download_button("📥 Download Report", report, file_name="queue_report.txt", key="download_report")
 
     if st.button("🏠 Back to Home"):
         st.session_state.page = 1
