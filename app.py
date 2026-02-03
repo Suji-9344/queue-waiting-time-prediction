@@ -22,6 +22,7 @@ body { background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);}
 </style>
 """, unsafe_allow_html=True)
 
+# ---------------- TITLE ----------------
 st.markdown('<div class="main-title">SMART QUEUE MANAGEMENT SYSTEM</div>', unsafe_allow_html=True)
 
 # ---------------- TABS ----------------
@@ -32,7 +33,7 @@ tab1, tab2, tab3, tab4 = st.tabs([
     "🚨 Priority & Alerts"
 ])
 
-# ---------------- TAB 1 ----------------
+# ---------------- TAB 1: WAIT TIME ----------------
 with tab1:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     people_ahead = st.number_input("Number of People Ahead", min_value=0, value=10)
@@ -47,15 +48,15 @@ with tab1:
         """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ---------------- TAB 2 ----------------
+# ---------------- TAB 2: LIVE QR CODE ----------------
 with tab2:
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("Live Queue Status QR Code")
+    st.subheader("Live Queue Status")
 
-    # 1️⃣ Display App Image (example: 'app_logo.png')
-    st.image("priority.png", width=200)  # Replace with your app image file if needed
+    # 1️⃣ Display App Logo/Image
+    st.image("priority.png", width=200)  # Replace with your app logo file if you have a different one
 
-    # 2️⃣ Generate QR code
+    # 2️⃣ Generate QR code using qrcode library
     qr_data = "Live Queue Active | Smart Queue System | People Ahead: 10"
     qr_img = qrcode.make(qr_data)
     buffer = BytesIO()
@@ -65,9 +66,11 @@ with tab2:
     st.success("Scan this QR code to check live queue status")
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ---------------- TAB 3 ----------------
+# ---------------- TAB 3: SUGGESTIONS ----------------
 with tab3:
     st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.subheader("Smart Queue Suggestions")
+
     col1, col2 = st.columns(2)
     with col1:
         st.image("suggestion1.png", use_container_width=True)
@@ -75,10 +78,11 @@ with tab3:
     with col2:
         st.image("suggestion2.png", use_container_width=True)
         st.write("✔ Use QR check-in to save time")
+
     st.info("AI Tip: Morning and late afternoon usually have shorter queues.")
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ---------------- TAB 4 ----------------
+# ---------------- TAB 4: PRIORITY & ALERTS ----------------
 with tab4:
     st.markdown('<div class="alert-card">', unsafe_allow_html=True)
     st.image("alert.png", width=150)
