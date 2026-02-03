@@ -1,219 +1,170 @@
 import streamlit as st
 import time
-import random
 from datetime import datetime, timedelta
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(
-    page_title="Smart Queue System",
+    page_title="Smart Queue Management System",
     page_icon="⏱",
-    layout="centered"
+    layout="wide"
 )
 
-# ---------------- CUSTOM CSS ----------------
+# ---------------- CSS DESIGN ----------------
 st.markdown("""
 <style>
 
-/* Main background */
+/* Background */
 .stApp {
-    background: linear-gradient(135deg, #dbeafe, #fef3c7);
+    background: linear-gradient(135deg, #3b82f6, #f97316);
     font-family: 'Segoe UI', sans-serif;
 }
 
-/* Title */
-h1, h2, h3 {
-    color: #1e3a8a;
-    text-align: center;
-}
-
-/* Card style */
-.card {
-    background: white;
+/* Header */
+.header {
+    background: linear-gradient(90deg, #1e3a8a, #2563eb);
     padding: 20px;
-    border-radius: 15px;
-    box-shadow: 0px 6px 15px rgba(0,0,0,0.15);
-    margin-bottom: 15px;
+    border-radius: 20px;
+    color: white;
+    text-align: center;
+    font-size: 32px;
+    font-weight: bold;
+    margin-bottom: 20px;
 }
 
-/* Queue box */
+/* Cards */
+.card {
+    background: rgba(255,255,255,0.95);
+    padding: 20px;
+    border-radius: 20px;
+    box-shadow: 0px 8px 20px rgba(0,0,0,0.25);
+    margin-bottom: 20px;
+}
+
+/* Highlight card */
+.alert-card {
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    padding: 18px;
+    border-radius: 18px;
+}
+
+/* Queue */
 .queue-box {
-    border: 3px dashed #2563eb;
+    background: #e0f2fe;
+    border-radius: 20px;
     padding: 15px;
-    border-radius: 15px;
-    background: #eff6ff;
-    font-size: 22px;
     text-align: center;
+    font-size: 24px;
+    border: 3px dashed #2563eb;
 }
 
 /* Buttons */
 .stButton > button {
     background: linear-gradient(90deg, #2563eb, #1e40af);
     color: white;
-    border-radius: 12px;
-    padding: 10px 20px;
+    border-radius: 15px;
     font-size: 16px;
+    padding: 10px 20px;
     border: none;
-}
-.stButton > button:hover {
-    background: linear-gradient(90deg, #1e40af, #2563eb);
-}
-
-/* Progress bar */
-.stProgress > div > div {
-    background-color: #22c55e;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- SESSION STATE ----------------
-defaults = {
-    "page": 1,
-    "people_ahead": 10,
-    "staff": 2,
-    "service_time": 5,
-    "arrival_rate": 1,
-    "staff_exp": "Experienced",
-    "system_status": "Normal",
-    "peak": False,
-    "wait_time": 0,
-    "position": 0,
-    "served": 0,
-    "predicted": False
-}
+# ---------------- HEADER ----------------
+st.markdown("<div class='header'>🚦 SMART QUEUE MANAGEMENT SYSTEM</div>", unsafe_allow_html=True)
 
-for k, v in defaults.items():
-    if k not in st.session_state:
-        st.session_state[k] = v
+# ---------------- TOP NAV ----------------
+tab1, tab2, tab3, tab4 = st.tabs(
+    ["🔮 Predictor", "🔄 Live Queue", "🚨 Alerts", "♿ Priority"]
+)
 
-# ---------------- WAIT TIME PREDICTION ----------------
-def predict_wait(p, s, staff, arr, exp, sys, peak):
-    exp_w = {"New": 1.2, "Experienced": 1.0, "Expert": 0.8}[exp]
-    sys_w = {"Normal": 1.0, "Slow": 1.3, "Down": 1.6}[sys]
-    peak_w = 1.25 if peak else 1.0
-    base = (p * s) / max(1, staff)
-    arrival_effect = arr * 2
-    return round(base * exp_w * sys_w * peak_w + arrival_effect, 1)
+# ================= TAB 1 : PREDICTOR =================
+with tab1:
+    col1, col2 = st.columns([1, 2])
 
-# ---------------- QUEUE MOOD ----------------
-def queue_mood(wait):
-    if wait <= 15:
-        return "🟢 Low Crowd"
-    elif wait <= 30:
-        return "🟡 Medium Crowd"
-    else:
-        return "🔴 Heavy Crowd"
+    with col1:
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.subheader("⏱ Wait Time Estimator")
 
-# ================= PAGE 1 =================
-if st.session_state.page == 1:
-    st.title("🚦 Smart Queue Predictor & Live Tracker")
+        people = st.slider("👥 People Ahead", 0, 50, 12)
+        staff = st.slider("👨‍💼 Staff", 1, 5, 3)
+        service = st.slider("⏳ Service Time (mins)", 2, 10, 6)
+        arrival = st.slider("📈 Arrival Rate", 0, 5, 2)
 
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.session_state.people_ahead = st.slider("👥 People Ahead", 0, 50, st.session_state.people_ahead)
-    st.session_state.staff = st.slider("👨‍💼 Staff Count", 1, 5, st.session_state.staff)
-    st.session_state.service_time = st.slider("⏱ Service Time (mins)", 2, 10, st.session_state.service_time)
-    st.session_state.arrival_rate = st.slider("📈 Arrival Rate", 0, 5, st.session_state.arrival_rate)
-    st.session_state.staff_exp = st.selectbox("🎓 Staff Experience", ["New", "Experienced", "Expert"])
-    st.session_state.system_status = st.selectbox("🖥 System Status", ["Normal", "Slow", "Down"])
-    st.session_state.peak = st.checkbox("🚨 Peak Hour")
+        if st.button("🔍 Predict"):
+            wait = round((people * service) / staff + arrival * 2, 1)
+            st.success(f"Estimated Wait: {wait} mins")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with col2:
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.subheader("📊 AI Prediction Result")
+
+        st.write("🕒 **Now Serving:** A-23")
+        st.write("⏳ **Approx Wait:** 5 minutes")
+        st.progress(0.6)
+        st.info("🟡 Queue Mood: Medium Crowd")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+# ================= TAB 2 : LIVE QUEUE =================
+with tab2:
+    col1, col2 = st.columns([2, 1])
+
+    with col1:
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.subheader("🔄 Live Queue Tracker")
+
+        queue_container = st.empty()
+        progress = st.progress(0)
+
+        if st.button("▶️ Start Live Queue"):
+            total = 12
+            for i in range(total + 1):
+                remaining = total - i
+                progress.progress(i / total)
+                queue_container.markdown(
+                    f"<div class='queue-box'>{'👤 ' * remaining}</div>",
+                    unsafe_allow_html=True
+                )
+                time.sleep(0.5)
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with col2:
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.subheader("📍 Your Status")
+        st.write("Your Position: **4 / 12**")
+        st.write("Expected Time: **5 mins**")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+# ================= TAB 3 : ALERTS =================
+with tab3:
+    st.markdown("<div class='alert-card'>", unsafe_allow_html=True)
+    st.subheader("🚨 Crowd Surge Alert")
+    st.error("Heavy crowd expected in next 10 minutes")
     st.markdown("</div>", unsafe_allow_html=True)
 
-    if st.button("🔍 Predict Waiting Time"):
-        st.session_state.wait_time = predict_wait(
-            st.session_state.people_ahead,
-            st.session_state.service_time,
-            st.session_state.staff,
-            st.session_state.arrival_rate,
-            st.session_state.staff_exp,
-            st.session_state.system_status,
-            st.session_state.peak
-        )
-        st.session_state.position = st.session_state.people_ahead
-        st.session_state.served = 0
-        st.session_state.predicted = True
-
-    if st.session_state.predicted:
-        end_time = datetime.now() + timedelta(minutes=st.session_state.wait_time)
-        st.success(f"⏳ Estimated Waiting Time: {st.session_state.wait_time} minutes")
-        st.info(f"🕒 Expected Turn Time: {end_time.strftime('%I:%M %p')}")
-        st.write(f"**Queue Mood:** {queue_mood(st.session_state.wait_time)}")
-
-        if st.button("➡️ Start Live Queue"):
-            st.session_state.page = 2
-            st.rerun()
-
-# ================= PAGE 2 =================
-elif st.session_state.page == 2:
-    st.title("🔄 Live Queue Simulation")
-
     st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.write(f"🙋 **Your Position:** {st.session_state.position}")
-    st.write(f"✅ **People Served:** {st.session_state.served}")
-    progress_bar = st.progress(0)
-    queue_container = st.empty()
+    st.subheader("🔔 Smart Notifications")
+    st.warning("Your turn in 3 minutes")
+    st.info("Please be ready at counter")
     st.markdown("</div>", unsafe_allow_html=True)
 
-    if st.button("▶️ Start Simulation"):
-        total = st.session_state.position
-        for i in range(total + 1):
-            remaining = total - i
-            st.session_state.position = remaining
-            st.session_state.served += 1
-
-            progress_bar.progress(i / max(1, total))
-            people_icons = "👤 " * remaining
-            queue_container.markdown(f"<div class='queue-box'>{people_icons}</div>", unsafe_allow_html=True)
-
-            if remaining == 3:
-                st.warning("🔔 Your turn is coming soon!")
-
-            time.sleep(1)
-
-        st.success("🎉 Your service is completed!")
-
-    st.subheader("📱 Live Queue QR")
-    qr_text = f"Position:{st.session_state.position}, Waiting:{st.session_state.wait_time} mins"
-    st.image(f"https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl={qr_text}")
-
-    if st.button("➡️ Smart Suggestions"):
-        st.session_state.page = 3
-        st.rerun()
-
-# ================= PAGE 3 =================
-elif st.session_state.page == 3:
-    st.title("💡 Smart Suggestions")
-
+# ================= TAB 4 : PRIORITY =================
+with tab4:
     st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.write("🟢 Add staff when queue > 15")
-    st.write("🕒 Best time: 4 PM – 6 PM")
-    st.write("⚠️ Avoid queue when > 12")
-    st.write("🔧 Reallocate staff dynamically")
-    st.write("⭐ Priority for seniors & emergencies")
+    st.subheader("♿ Priority Queue System")
+
+    st.write("✅ Senior citizens")
+    st.write("✅ Pregnant women")
+    st.write("✅ Emergency cases")
+
+    st.success("Priority users get reduced waiting time")
     st.markdown("</div>", unsafe_allow_html=True)
 
-    if st.button("➡️ Download Report"):
-        st.session_state.page = 4
-        st.rerun()
-
-# ================= PAGE 4 =================
-elif st.session_state.page == 4:
-    st.title("📄 Queue Report")
-
-    report = f"""
-SMART QUEUE MANAGEMENT REPORT
-
-People Ahead: {st.session_state.people_ahead}
-Staff Count: {st.session_state.staff}
-Service Time: {st.session_state.service_time} mins
-Arrival Rate: {st.session_state.arrival_rate}
-
-Predicted Waiting Time: {st.session_state.wait_time} minutes
-
-STATUS: Queue completed successfully
-"""
-
-    st.download_button("📥 Download Report", report, file_name="queue_report.txt")
-
-    if st.button("🏠 Back to Home"):
-        st.session_state.page = 1
-        st.rerun()
+# ---------------- FOOTER ----------------
+st.markdown("""
+<div style="text-align:center;color:white;margin-top:30px;">
+Ethical AI | Smart Alerts | Digital Queue | Decision Support
+</div>
+""", unsafe_allow_html=True)
