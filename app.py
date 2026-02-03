@@ -1,6 +1,5 @@
 import streamlit as st
 import time
-from datetime import datetime, timedelta
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(
@@ -9,26 +8,33 @@ st.set_page_config(
     layout="wide"
 )
 
-# ---------------- CSS DESIGN ----------------
+# ---------------- CSS ----------------
 st.markdown("""
 <style>
 
 /* Background */
 .stApp {
-    background: linear-gradient(135deg, #3b82f6, #f97316);
+    background: linear-gradient(135deg, #2563eb, #f97316);
     font-family: 'Segoe UI', sans-serif;
 }
 
 /* Header */
 .header {
     background: linear-gradient(90deg, #1e3a8a, #2563eb);
-    padding: 20px;
+    padding: 18px;
     border-radius: 20px;
-    color: white;
+    color: #fde68a;
     text-align: center;
-    font-size: 32px;
-    font-weight: bold;
-    margin-bottom: 20px;
+    font-size: 34px;
+    font-weight: 800;
+    margin-bottom: 25px;
+}
+
+/* Tabs */
+.stTabs [data-baseweb="tab"] {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e3a8a;
 }
 
 /* Cards */
@@ -36,25 +42,34 @@ st.markdown("""
     background: rgba(255,255,255,0.95);
     padding: 20px;
     border-radius: 20px;
-    box-shadow: 0px 8px 20px rgba(0,0,0,0.25);
+    box-shadow: 0px 8px 18px rgba(0,0,0,0.25);
     margin-bottom: 20px;
 }
 
-/* Highlight card */
-.alert-card {
+/* Alert Card */
+.alert {
     background: linear-gradient(135deg, #fee2e2, #fecaca);
     padding: 18px;
     border-radius: 18px;
+    font-weight: 700;
+}
+
+/* Notification Card */
+.notify {
+    background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+    padding: 18px;
+    border-radius: 18px;
+    font-weight: 700;
 }
 
 /* Queue */
 .queue-box {
-    background: #e0f2fe;
-    border-radius: 20px;
-    padding: 15px;
-    text-align: center;
-    font-size: 24px;
     border: 3px dashed #2563eb;
+    padding: 15px;
+    border-radius: 20px;
+    background: #eff6ff;
+    font-size: 22px;
+    text-align: center;
 }
 
 /* Buttons */
@@ -63,7 +78,7 @@ st.markdown("""
     color: white;
     border-radius: 15px;
     font-size: 16px;
-    padding: 10px 20px;
+    padding: 10px 22px;
     border: none;
 }
 
@@ -71,14 +86,17 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------------- HEADER ----------------
-st.markdown("<div class='header'>🚦 SMART QUEUE MANAGEMENT SYSTEM</div>", unsafe_allow_html=True)
-
-# ---------------- TOP NAV ----------------
-tab1, tab2, tab3, tab4 = st.tabs(
-    ["🔮 Predictor", "🔄 Live Queue", "🚨 Alerts", "♿ Priority"]
+st.markdown(
+    "<div class='header'>🚦 SMART QUEUE MANAGEMENT SYSTEM</div>",
+    unsafe_allow_html=True
 )
 
-# ================= TAB 1 : PREDICTOR =================
+# ---------------- TABS ----------------
+tab1, tab2, tab3, tab4 = st.tabs(
+    ["Predictor", "Live Queue", "Suggestions", "Priority & Alerts"]
+)
+
+# ================= TAB 1 =================
 with tab1:
     col1, col2 = st.columns([1, 2])
 
@@ -86,85 +104,81 @@ with tab1:
         st.markdown("<div class='card'>", unsafe_allow_html=True)
         st.subheader("⏱ Wait Time Estimator")
 
-        people = st.slider("👥 People Ahead", 0, 50, 12)
-        staff = st.slider("👨‍💼 Staff", 1, 5, 3)
-        service = st.slider("⏳ Service Time (mins)", 2, 10, 6)
-        arrival = st.slider("📈 Arrival Rate", 0, 5, 2)
+        st.write("**People Ahead:** 12")
+        st.write("**Staff Count:** 3")
+        st.write("**Service Time:** 6 mins")
+        st.write("**Arrival Rate:** 2 / min")
 
-        if st.button("🔍 Predict"):
-            wait = round((people * service) / staff + arrival * 2, 1)
-            st.success(f"Estimated Wait: {wait} mins")
+        st.success("Estimated Wait Time: **18 mins**")
+        st.info("Queue Mood: 🟡 Medium Crowd")
+
+        st.button("▶ Start Live Queue")
         st.markdown("</div>", unsafe_allow_html=True)
 
     with col2:
         st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.subheader("📊 AI Prediction Result")
+        st.subheader("📊 Live Queue Tracker")
 
-        st.write("🕒 **Now Serving:** A-23")
-        st.write("⏳ **Approx Wait:** 5 minutes")
+        st.markdown("### **NOW SERVING A-23**")
+        st.write("Approx Wait: **5 mins**")
         st.progress(0.6)
-        st.info("🟡 Queue Mood: Medium Crowd")
+
+        st.markdown("<div class='queue-box'>👤 👤 👤 👤 👤 👤 👤</div>", unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
-# ================= TAB 2 : LIVE QUEUE =================
+# ================= TAB 2 =================
 with tab2:
-    col1, col2 = st.columns([2, 1])
-
-    with col1:
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.subheader("🔄 Live Queue Tracker")
-
-        queue_container = st.empty()
-        progress = st.progress(0)
-
-        if st.button("▶️ Start Live Queue"):
-            total = 12
-            for i in range(total + 1):
-                remaining = total - i
-                progress.progress(i / total)
-                queue_container.markdown(
-                    f"<div class='queue-box'>{'👤 ' * remaining}</div>",
-                    unsafe_allow_html=True
-                )
-                time.sleep(0.5)
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    with col2:
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.subheader("📍 Your Status")
-        st.write("Your Position: **4 / 12**")
-        st.write("Expected Time: **5 mins**")
-        st.markdown("</div>", unsafe_allow_html=True)
-
-# ================= TAB 3 : ALERTS =================
-with tab3:
-    st.markdown("<div class='alert-card'>", unsafe_allow_html=True)
-    st.subheader("🚨 Crowd Surge Alert")
-    st.error("Heavy crowd expected in next 10 minutes")
-    st.markdown("</div>", unsafe_allow_html=True)
-
     st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.subheader("🔔 Smart Notifications")
-    st.warning("Your turn in 3 minutes")
-    st.info("Please be ready at counter")
+    st.subheader("🔄 Live Queue Simulation")
+
+    queue_area = st.empty()
+    progress = st.progress(0)
+
+    if st.button("▶ Start Simulation"):
+        total = 12
+        for i in range(total + 1):
+            remain = total - i
+            progress.progress(i / total)
+            queue_area.markdown(
+                f"<div class='queue-box'>{'👤 ' * remain}</div>",
+                unsafe_allow_html=True
+            )
+            time.sleep(0.4)
+
     st.markdown("</div>", unsafe_allow_html=True)
 
-# ================= TAB 4 : PRIORITY =================
+# ================= TAB 3 =================
+with tab3:
+    st.markdown("<div class='alert'>", unsafe_allow_html=True)
+    st.subheader("🚨 Crowd Surge Alert!")
+    st.write("⚠ Heavy crowd incoming. Surge expected soon.")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown("<div class='notify'>", unsafe_allow_html=True)
+    st.subheader("🔔 Smart Notifications")
+    st.write("🔔 Your turn in **3 minutes**")
+    st.write("📢 Get ready for service!")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# ================= TAB 4 =================
 with tab4:
     st.markdown("<div class='card'>", unsafe_allow_html=True)
     st.subheader("♿ Priority Queue System")
 
-    st.write("✅ Senior citizens")
-    st.write("✅ Pregnant women")
-    st.write("✅ Emergency cases")
+    st.write("✔ Senior citizens")
+    st.write("✔ Pregnant women")
+    st.write("✔ Emergency cases")
 
-    st.success("Priority users get reduced waiting time")
+    st.success("Fast-track service enabled for priority users")
     st.markdown("</div>", unsafe_allow_html=True)
+
+# ================= IMAGE SECTION =================
+st.markdown("## 🎨 UI Design Preview")
+st.image("dashboard_ui.png", use_container_width=True)
 
 # ---------------- FOOTER ----------------
 st.markdown("""
-<div style="text-align:center;color:white;margin-top:30px;">
+<div style="text-align:center;color:white;margin-top:30px;font-weight:600;">
 Ethical AI | Smart Alerts | Digital Queue | Decision Support
 </div>
 """, unsafe_allow_html=True)
