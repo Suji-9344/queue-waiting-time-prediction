@@ -1,5 +1,7 @@
 import streamlit as st
 from datetime import datetime, timedelta
+import qrcode
+from io import BytesIO
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(
@@ -100,13 +102,19 @@ with tab1:
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ==================================================
-# TAB 2 – LIVE QR CODE (NO qrcode MODULE)
+# TAB 2 – LIVE QR CODE USING qrcode LIBRARY
 # ==================================================
 with tab2:
     st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.subheader("Live Queue Status QR Code")
 
-    qr_data = "Live Queue Active | Smart Queue Management System"
-    st.qr_code(qr_data)
+    qr_data = "Live Queue Active | Smart Queue System | People Ahead: 10"
+    qr_img = qrcode.make(qr_data)
+
+    # Convert QR to stream for Streamlit
+    buffer = BytesIO()
+    qr_img.save(buffer, format="PNG")
+    st.image(buffer.getvalue(), width=200)
 
     st.success("Scan this QR code to check live queue status")
     st.markdown('</div>', unsafe_allow_html=True)
@@ -116,6 +124,7 @@ with tab2:
 # ==================================================
 with tab3:
     st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.subheader("Smart Queue Suggestions")
 
     col1, col2 = st.columns(2)
 
@@ -127,7 +136,7 @@ with tab3:
         st.image("suggestion2.png", use_container_width=True)
         st.write("✔ Use QR check-in to save time")
 
-    st.info("AI Tip: Morning and late afternoon have shorter queues")
+    st.info("AI Tip: Morning and late afternoon usually have shorter queues.")
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ==================================================
