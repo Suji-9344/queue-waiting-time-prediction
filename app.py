@@ -53,10 +53,10 @@ with tab2:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.subheader("Live Queue Status")
 
-    # 1️⃣ Display App Logo/Image
-    st.image("priority.png", width=200)  # Replace with your app logo file if you have a different one
+    # Display app logo
+    st.image("priority.png", width=200)
 
-    # 2️⃣ Generate QR code using qrcode library
+    # Generate QR code
     qr_data = "Live Queue Active | Smart Queue System | People Ahead: 10"
     qr_img = qrcode.make(qr_data)
     buffer = BytesIO()
