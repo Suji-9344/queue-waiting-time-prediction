@@ -54,7 +54,7 @@ with tab2:
     st.subheader("Live Queue Status")
 
     # Display app logo
-    st.image("priority.png", width=200)
+    st.image("", width=200)
 
     # Generate QR code
     qr_data = "Live Queue Active | Smart Queue System | People Ahead: 10"
