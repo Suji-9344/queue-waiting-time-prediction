@@ -1,9 +1,8 @@
 import streamlit as st
 import time
 import random
-import qrcode
-from io import BytesIO
 from datetime import datetime, timedelta
+from urllib.parse import quote
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(
@@ -12,34 +11,54 @@ st.set_page_config(
     layout="centered"
 )
 
-# ---------------- CUSTOM CSS & STYLING ----------------
+# ---------------- COLORFUL BACKGROUND & UI ----------------
 st.markdown("""
 <style>
-    .stApp {
-        background: linear-gradient(to bottom, #f0f2f6, #e1e8f0);
-    }
-    .highlight {
-        color: #0073e6;
-        font-weight: bold;
-        background-color: #e6f3ff;
-        padding: 2px 5px;
-        border-radius: 4px;
-    }
-    .queue-box {
-        border: 2px solid #0073e6;
-        padding: 20px;
-        border-radius: 15px;
-        background-color: #ffffff;
-        box-shadow: 2px 2px 15px rgba(0,0,0,0.1);
-        text-align: center;
-        font-size: 24px;
-    }
-    .metric-card {
-        background-color: white;
-        padding: 15px;
-        border-radius: 10px;
-        border-left: 5px solid #0073e6;
-    }
+body {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    font-family: 'Arial', sans-serif;
+    color: white;
+}
+
+h1, h2, h3 {
+    color: #ffffff;
+    font-weight: 900;
+}
+
+.queue-box {
+    border: 2px solid #00f5ff;
+    padding: 15px;
+    border-radius: 12px;
+    background-color: #1f2a44;
+    margin-bottom: 10px;
+    text-align: center;
+    font-size: 20px;
+}
+
+.stButton > button {
+    background-color: #00f5ff;
+    color: black;
+    font-weight: 900;
+    border-radius: 12px;
+    padding: 8px 20px;
+}
+
+.stButton > button:hover {
+    background-color: #22ff88;
+}
+
+.stSlider label, .stSelectbox label, .stCheckbox label {
+    font-weight: 700;
+    color: white;
+}
+
+.card {
+    background-color: #1f2a44;
+    padding: 15px;
+    border-radius: 12px;
+    border: 2px solid #22ff88;
+    margin-bottom: 15px;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -62,7 +81,7 @@ for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
-# ---------------- HELPER FUNCTIONS ----------------
+# ---------------- WAIT TIME PREDICTION ----------------
 def predict_wait(p, s, staff, arr, exp, sys, peak):
     exp_w = {"New": 1.2, "Experienced": 1.0, "Expert": 0.8}[exp]
     sys_w = {"Normal": 1.0, "Slow": 1.3, "Down": 1.6}[sys]
@@ -71,50 +90,129 @@ def predict_wait(p, s, staff, arr, exp, sys, peak):
     arrival_effect = arr * 2
     return round(base * exp_w * sys_w * peak_w + arrival_effect, 1)
 
-def generate_qr(data):
-    qr = qrcode.QRCode(version=1, box_size=10, border=5)
-    qr.add_data(data)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
-    buf = BytesIO()
-    img.save(buf, format="PNG")
-    return buf.getvalue()
+def queue_mood(wait):
+    if wait <= 15:
+        return "🟢 Low Crowd"
+    elif wait <= 30:
+        return "🟡 Medium Crowd"
+    else:
+        return "🔴 Heavy Crowd"
 
-# ================= PAGE 1 : INPUT =================
+# ================= PAGE 1 =================
 if st.session_state.page == 1:
-    st.title("🚦 Smart Queue Predictor")
-    
-    # Adding a Hero Image
-    st.image("https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=800", use_container_width=True)
+    st.title("🚦 Smart Queue Predictor & Live Tracker")
 
-    col1, col2 = st.columns(2)
-    with col1:
-        st.session_state.people_ahead = st.slider("👥 People Ahead", 0, 50, st.session_state.people_ahead)
-        st.session_state.staff = st.slider("👨‍💼 Staff Count", 1, 5, st.session_state.staff)
-    with col2:
-        st.session_state.service_time = st.slider("⏱ Service Time (mins)", 2, 10, st.session_state.service_time)
-        st.session_state.arrival_rate = st.slider("📈 Arrival Rate", 0, 5, st.session_state.arrival_rate)
+    st.session_state.people_ahead = st.slider("👥 People Ahead of You", 0, 50, st.session_state.people_ahead)
+    st.session_state.staff = st.slider("👨‍💼 Staff Count", 1, 5, st.session_state.staff)
+    st.session_state.service_time = st.slider("⏱ Average Service Time (mins)", 2, 10, st.session_state.service_time)
+    st.session_state.arrival_rate = st.slider("📈 Arrival Rate (people/min)", 0, 5, st.session_state.arrival_rate)
 
-    st.markdown("### 🛠 System Variables")
-    c1, c2, c3 = st.columns(3)
-    with c1: st.session_state.staff_exp = st.selectbox("🎓 Staff Experience", ["New", "Experienced", "Expert"])
-    with c2: st.session_state.system_status = st.selectbox("🖥 System Status", ["Normal", "Slow", "Down"])
-    with c3: st.session_state.peak = st.checkbox("🚨 Peak Hour")
+    st.session_state.staff_exp = st.selectbox("🎓 Staff Experience", ["New", "Experienced", "Expert"])
+    st.session_state.system_status = st.selectbox("🖥 System Status", ["Normal", "Slow", "Down"])
+    st.session_state.peak = st.checkbox("🚨 Peak Hour")
 
-    if st.button("🔍 Calculate Wait Time", use_container_width=True):
+    if st.button("🔍 Predict Waiting Time"):
         st.session_state.wait_time = predict_wait(
-            st.session_state.people_ahead, st.session_state.service_time,
-            st.session_state.staff, st.session_state.arrival_rate,
-            st.session_state.staff_exp, st.session_state.system_status, st.session_state.peak
+            st.session_state.people_ahead,
+            st.session_state.service_time,
+            st.session_state.staff,
+            st.session_state.arrival_rate,
+            st.session_state.staff_exp,
+            st.session_state.system_status,
+            st.session_state.peak
         )
+        st.session_state.position = st.session_state.people_ahead
+        st.session_state.served = 0
         st.session_state.predicted = True
 
     if st.session_state.predicted:
-        # REAL-TIME CALCULATION
-        turn_time = datetime.now() + timedelta(minutes=st.session_state.wait_time)
-        
+        end_time = datetime.now() + timedelta(minutes=st.session_state.wait_time)
+
         st.markdown(f"""
-        <div class='metric-card'>
-            <h3>📊 Analysis Result</h3>
-            <p>Estimated Waiting: <span class='highlight'>{st.session_state.wait_time} mins</span></p>
-            <p>Expected Turn: <spa
+        <div class="card">
+        ⏳ <b>Estimated Waiting Time:</b> {st.session_state.wait_time} minutes<br><br>
+        🕒 <b>Expected Turn Time:</b> {end_time.strftime('%I:%M %p')}<br><br>
+        🚦 <b>Queue Mood:</b> {queue_mood(st.session_state.wait_time)}
+        </div>
+        """, unsafe_allow_html=True)
+
+        if st.button("➡️ Start Live Queue"):
+            st.session_state.page = 2
+            st.rerun()
+
+# ================= PAGE 2 =================
+elif st.session_state.page == 2:
+    st.title("🔄 Live Queue Simulation")
+
+    progress_bar = st.progress(0)
+    queue_container = st.empty()
+
+    if st.button("▶️ Start Simulation"):
+        total = st.session_state.position
+        for i in range(total + 1):
+            remaining = total - i
+            st.session_state.position = remaining
+            st.session_state.served += 1
+
+            progress_bar.progress(i / max(1, total))
+            queue_container.markdown(
+                f"<div class='queue-box'>{'👤 ' * remaining}</div>",
+                unsafe_allow_html=True
+            )
+
+            if remaining == 3:
+                st.warning("🔔 Your turn is coming soon!")
+
+            time.sleep(1)
+
+        st.success("🎉 Service Completed Successfully!")
+
+    # ---------------- WORKING QR CODE ----------------
+    qr_data = f"""
+Queue Status
+Remaining: {st.session_state.position}
+Waiting Time: {st.session_state.wait_time} minutes
+"""
+    qr_encoded = quote(qr_data)
+    qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={qr_encoded}"
+
+    st.subheader("📱 Scan QR for Live Queue Status")
+    st.image(qr_url)
+
+    if st.button("➡️ Smart Suggestions"):
+        st.session_state.page = 3
+        st.rerun()
+
+# ================= PAGE 3 =================
+elif st.session_state.page == 3:
+    st.title("💡 Smart Suggestions")
+    st.write("🟢 Add staff if queue > 15")
+    st.write("🕒 Best time: 4 PM – 6 PM")
+    st.write("⚠️ Avoid peak hours")
+    st.write("⭐ Priority queue for seniors")
+
+    if st.button("➡️ Download Report"):
+        st.session_state.page = 4
+        st.rerun()
+
+# ================= PAGE 4 =================
+elif st.session_state.page == 4:
+    st.title("📄 Queue Report")
+
+    report = f"""
+SMART QUEUE MANAGEMENT REPORT
+
+People Ahead: {st.session_state.people_ahead}
+Staff Count: {st.session_state.staff}
+Service Time: {st.session_state.service_time}
+Arrival Rate: {st.session_state.arrival_rate}
+
+Predicted Waiting Time: {st.session_state.wait_time} minutes
+Status: Queue Completed
+"""
+
+    st.download_button("📥 Download Report", report, file_name="queue_report.txt")
+
+    if st.button("🏠 Back to Home"):
+        st.session_state.page = 1
+        st.rerun()
