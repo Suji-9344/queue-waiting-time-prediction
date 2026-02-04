@@ -1,5 +1,3 @@
-
-You said:
 import streamlit as st  
 import time  
 import random  
