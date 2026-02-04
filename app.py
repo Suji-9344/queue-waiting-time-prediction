@@ -1,7 +1,7 @@
 import streamlit as st
 import time
 from datetime import datetime, timedelta
-import urllib.parse
+from urllib.parse import quote   # ✅ SAFE IMPORT (no NameError)
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(
@@ -10,7 +10,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# ---------------- STRONG HIGH-CONTRAST CSS ----------------
+# ---------------- HIGH-CONTRAST DARK CSS ----------------
 st.markdown("""
 <style>
 body {
@@ -37,7 +37,6 @@ label, p, span, div {
 
 .stSlider > label {
     font-size: 18px;
-    color: #ffffff !important;
 }
 
 .stButton > button {
@@ -51,7 +50,6 @@ label, p, span, div {
 
 .stButton > button:hover {
     background-color: #22ff88;
-    color: #000000;
 }
 
 .card {
@@ -86,6 +84,7 @@ defaults = {
     "position": 0,
     "predicted": False
 }
+
 for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
@@ -109,14 +108,14 @@ if st.session_state.page == 1:
     )
 
     if st.button("🔍 Predict Waiting Time"):
-        # -------- WAIT TIME --------
+        # Waiting time
         st.session_state.wait_time = predict_wait(
             st.session_state.people_ahead,
             st.session_state.service_time,
             st.session_state.staff
         )
 
-        # -------- EXPECTED TURN TIME (CORRECT & MERGED) --------
+        # ✅ EXPECTED TURN TIME = CURRENT TIME + WAIT TIME
         current_time = datetime.now()
         expected_turn_time = current_time + timedelta(
             minutes=st.session_state.wait_time
@@ -159,14 +158,15 @@ elif st.session_state.page == 2:
 
     st.success("🎉 Service Completed Successfully!")
 
-    # ---------------- QR CODE ----------------
+    # ---------------- WORKING QR CODE ----------------
     qr_text = f"""
 Queue Status
 People Remaining: {st.session_state.position}
 Waiting Time: {st.session_state.wait_time} minutes
 Expected Turn Time: {st.session_state.expected_time}
 """
-    encoded = urllib.parse.quote(qr_text)
+
+    encoded = quote(qr_text)
     qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={encoded}"
 
     st.markdown("### 📱 Scan QR Code for Queue Details")
