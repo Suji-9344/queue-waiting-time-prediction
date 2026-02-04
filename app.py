@@ -122,22 +122,20 @@ if st.session_state.page == 1:
         )
 
         # ✅ EXPECTED TURN TIME (CORRECT CODE)
-        current_time = datetime.now()
-        expected_turn_time = current_time + timedelta(
-            minutes=st.session_state.wait_time
-        )
-        st.session_state.expected_time = expected_turn_time.strftime("%I:%M %p")
+        from datetime import datetime, timedelta
 
-        st.session_state.position = st.session_state.people_ahead
-        st.session_state.predicted = True
+# waiting time in minutes (example)
+waiting_time = st.session_state.wait_time
 
-    if st.session_state.predicted:
-        st.markdown(f"""
-        <div class="card">
-        ⏳ <b>Predicted Waiting Time:</b> {st.session_state.wait_time} minutes<br><br>
-        🕒 <b>Expected Turn Time:</b> {st.session_state.expected_time}
-        </div>
-        """, unsafe_allow_html=True)
+# current system time
+current_time = datetime.now()
+
+# expected turn time = current time + waiting time
+expected_turn_time = current_time + timedelta(minutes=waiting_time)
+
+# format in AM/PM
+st.session_state.expected_time = expected_turn_time.strftime("%I:%M %p")
+
 
         if st.button("▶️ Start Live Queue"):
             st.session_state.page = 2
